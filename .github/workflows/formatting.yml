@@ -1,0 +1,12 @@
+name: Formatting
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout git repository
+        uses: actions/checkout@v2
+      - name: Test code formatting
+        run: cargo fmt --all -- --check

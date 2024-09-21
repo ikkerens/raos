@@ -1,0 +1,17 @@
+[package]
+name = "raos_actix"
+version = "0.0.0-dev"
+edition = "2021"
+
+[dependencies]
+raos = { path = "../raos", version = "=0.0.0-dev", features = ["memory-impls"] }
+actix-web = { version = "4", default-features = false }
+futures = "0.3"
+url = "2"
+
+[dev-dependencies]
+actix-web = { version = "4", features = ["macros"] }
+test_example_support = { path = "../test_example_support" }
+
+[[example]]
+name = "actix"
