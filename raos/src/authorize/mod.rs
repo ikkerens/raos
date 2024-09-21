@@ -40,7 +40,7 @@ impl<U: 'static, E: 'static> OAuthManager<U, E> {
             client_id: validated.client.client_id,
             scope: validated.scopes,
             redirect_uri: validated.redirect_uri.clone(),
-            code_challenge: validated.code_challenge,g
+            code_challenge: validated.code_challenge,
         };
 
         // After validation, exchange our grant for an authorization code that can later be exchanged

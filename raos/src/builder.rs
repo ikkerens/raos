@@ -1,10 +1,7 @@
 use crate::{
     authorize::AuthorizationProvider,
     common::ClientProvider,
-    manager::{
-        OAuthManager,
-        OAuthConfig,
-    },
+    manager::{OAuthConfig, OAuthManager},
     token::TokenProvider,
 };
 
@@ -77,7 +74,7 @@ impl<C, A, T> OAuthManagerBuilder<C, A, T> {
     /// - The client is marked as confidential. (Client.confidential is true)
     /// - The client correctly implements the OpenID Connect nonce. (Client.supports_openid_connect is true AND the request has a nonce)
     ///
-    /// See more [link](https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-10.html#section-7.5.2)
+    /// See more [link](https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-11.html#section-7.5.2)
     pub fn require_code_challenge(mut self) -> Self {
         self.config.require_code_challenge = true;
         self
@@ -96,9 +93,9 @@ impl<C, A, T> OAuthManagerBuilder<C, A, T> {
 
 impl<C, A, T, O, E> OAuthManagerBuilder<C, A, T>
 where
-    C: ClientProvider<Error=E>,
-    A: AuthorizationProvider<OwnerId=O, Error=E>,
-    T: TokenProvider<OwnerId=O, Error=E>,
+    C: ClientProvider<Error = E>,
+    A: AuthorizationProvider<OwnerId = O, Error = E>,
+    T: TokenProvider<OwnerId = O, Error = E>,
 {
     pub fn build(self) -> OAuthManager<O, E> {
         OAuthManager {

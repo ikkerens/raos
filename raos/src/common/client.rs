@@ -11,10 +11,10 @@ pub struct Client {
 impl Client {
     pub fn is_valid(&self) -> bool {
         if self.client_id.is_empty() {
-            return false
+            return false;
         }
         if self.redirect_uris.is_empty() {
-            return false
+            return false;
         }
         true
     }

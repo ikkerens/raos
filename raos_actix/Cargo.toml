@@ -2,6 +2,8 @@
 name = "raos_actix"
 version = "0.0.0-dev"
 edition = "2021"
+description = "Async wrapper for raos using actix-web"
+license = "MIT"
 
 [dependencies]
 raos = { path = "../raos", version = "=0.0.0-dev", features = ["memory-impls"] }

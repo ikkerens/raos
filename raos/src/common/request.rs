@@ -2,7 +2,7 @@
 pub enum FrontendRequestMethod {
     GET,
     POST,
-    OtherUnsupported(String)
+    OtherUnsupported(String),
 }
 
 pub trait FrontendRequest {
@@ -11,6 +11,6 @@ pub trait FrontendRequest {
     fn header_param(&self, key: &str) -> Option<String>;
 
     fn query_param(&self, key: &str) -> Option<String>;
-    
+
     fn body_param(&self, key: &str) -> Option<String>;
 }

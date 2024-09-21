@@ -1,10 +1,6 @@
-use actix_web::{App, get, HttpServer, post, web};
+use actix_web::{get, post, web, App, HttpServer};
 
-use raos::{
-    common::Client,
-    manager::OAuthManager,
-    util::InMemoryAuthorizationProvider,
-};
+use raos::{common::Client, manager::OAuthManager, util::InMemoryAuthorizationProvider};
 use raos_actix::{ActixOAuthRequest, ActixOAuthResponse};
 use test_example_support::{DumbTokenProvider, VecClient, VecClientProvider};
 
@@ -26,17 +22,22 @@ async fn main() -> std::io::Result<()> {
             .disallow_plain_code_challenge()
             .build(),
     );
-    HttpServer::new(move || App::new()
+    HttpServer::new(move || {
+        App::new()
         .app_data(oauth.clone()) // Pass the oauth manager as data
         .service(authorize)
-        .service(token))
-        .bind(("127.0.0.1", 8080))?
-        .run()
-        .await
+        .service(token)
+    })
+    .bind(("127.0.0.1", 8080))?
+    .run()
+    .await
 }
 
 #[get("/authorize")]
-async fn authorize(req: ActixOAuthRequest, oauth: web::Data<OAuthManager<u32, ()>>) -> ActixOAuthResponse {
+async fn authorize(
+    req: ActixOAuthRequest,
+    oauth: web::Data<OAuthManager<u32, ()>>,
+) -> ActixOAuthResponse {
     let result = oauth.handle_authorization_request(req, 15).await;
     if let Err(ref e) = result {
         println!("Error: {e:#?}");
@@ -45,7 +46,10 @@ async fn authorize(req: ActixOAuthRequest, oauth: web::Data<OAuthManager<u32, ()
 }
 
 #[post("/token")]
-async fn token(req: ActixOAuthRequest, oauth: web::Data<OAuthManager<u32, ()>>) -> ActixOAuthResponse {
+async fn token(
+    req: ActixOAuthRequest,
+    oauth: web::Data<OAuthManager<u32, ()>>,
+) -> ActixOAuthResponse {
     let result = oauth.handle_token_request(req).await;
     if let Err(ref e) = result {
         println!("Error: {e:#?}");

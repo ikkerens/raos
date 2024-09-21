@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use dashmap::DashMap;
-use rand::{distributions::Alphanumeric, Rng, thread_rng};
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
 
 use crate::{async_trait, authorize::AuthorizationProvider, common::Grant};
 
@@ -12,10 +12,7 @@ pub struct InMemoryAuthorizationProvider<U, E> {
 
 impl<U, E> Default for InMemoryAuthorizationProvider<U, E> {
     fn default() -> Self {
-        Self {
-            codes: DashMap::new(),
-            _phantom: PhantomData,
-        }
+        Self { codes: DashMap::new(), _phantom: PhantomData }
     }
 }
 

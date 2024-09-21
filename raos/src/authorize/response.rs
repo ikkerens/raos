@@ -19,7 +19,7 @@ impl FrontendResponseExt for AuthorizationResponse {
         let Ok(url_params) = serde_urlencoded::to_string(&self) else {
             return FrontendResponse::Error { error: PublicOAuthError::ServerError.into() };
         };
-        
+
         // Append the query string to the redirect URI
         let mut location = self.redirect_uri;
         let full_params = if let Some(existing) = location.query() {

@@ -9,14 +9,16 @@ use crate::{
 
 #[allow(dead_code)]
 pub struct OAuthManager<OwnerIdType, ErrorType> {
-    pub(crate) client_provider: Box<dyn ClientProvider<Error=ErrorType>>,
-    pub(crate) authorization_provider: Box<dyn AuthorizationProvider<OwnerId=OwnerIdType, Error=ErrorType>>,
-    pub(crate) token_provider: Box<dyn TokenProvider<OwnerId=OwnerIdType, Error=ErrorType>>,
+    pub(crate) client_provider: Box<dyn ClientProvider<Error = ErrorType>>,
+    pub(crate) authorization_provider:
+        Box<dyn AuthorizationProvider<OwnerId = OwnerIdType, Error = ErrorType>>,
+    pub(crate) token_provider: Box<dyn TokenProvider<OwnerId = OwnerIdType, Error = ErrorType>>,
     pub(crate) config: OAuthConfig,
 }
 
 impl OAuthManager<(), ()> {
-    pub fn builder() -> OAuthManagerBuilder<NeedsClientProvider, NeedsAuthorizationProvider, NeedsTokenProvider>
+    pub fn builder(
+    ) -> OAuthManagerBuilder<NeedsClientProvider, NeedsAuthorizationProvider, NeedsTokenProvider>
     {
         OAuthManagerBuilder::new()
     }
