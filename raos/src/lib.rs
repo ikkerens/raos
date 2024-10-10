@@ -1,9 +1,5 @@
 #![forbid(unsafe_code)]
-#![warn(
-    missing_docs,
-    rust_2018_idioms,
-    unreachable_pub
-)]
+#![warn(missing_docs, rust_2018_idioms, unreachable_pub)]
 
 //! # RAOS
 //!
@@ -24,10 +20,10 @@ pub mod builder;
 pub mod common;
 /// The manager module contains the OAuthManager.
 pub mod manager;
+/// Test module, contains test support code, unit tests and integration tests.
+#[cfg(any(test, feature = "_doctest"))]
+pub mod test;
 /// The token module contains the token provider trait, validation and flow.
 pub mod token;
 /// The util module contains utility functions.
 pub mod util;
-/// Test module, contains test support code, unit tests and integration tests.
-#[cfg(any(test, feature = "_doctest"))]
-pub mod test;

@@ -118,8 +118,9 @@ impl<U: 'static, E: 'static> OAuthManager<U, E> {
             redirect_uri: validated.redirect_uri.clone(),
             code_challenge: validated.code_challenge,
         };
-        
-        let authorization_result = self.authorization_provider
+
+        let authorization_result = self
+            .authorization_provider
             .authorize_grant(&grant)
             .await
             .map_err(OAuthError::ProviderImplementationError)?;
@@ -128,7 +129,7 @@ impl<U: 'static, E: 'static> OAuthManager<U, E> {
             // TODO Add a way to prompt the resource owner for authentication or consent
             AuthorizationResult::RequireAuthentication => return Err(OAuthError::AccessDenied),
             AuthorizationResult::RequireScopeConsent(_) => return Err(OAuthError::AccessDenied),
-            AuthorizationResult::Unauthorized => return Err(OAuthError::AccessDenied)
+            AuthorizationResult::Unauthorized => return Err(OAuthError::AccessDenied),
         }
 
         // After validation, exchange our grant for an authorization code that can later be exchanged

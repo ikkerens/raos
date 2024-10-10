@@ -40,36 +40,36 @@ pub trait ClientProvider: 'static + Send + Sync {
     type Error;
 
     /// Get a client by its client id.
-    /// 
+    ///
     /// # Implementation notes
     /// If the client secret is kept in the same location as client information, please ensure it does not get loaded in this function.
     /// Secret validation is handled in [ClientProvider::verify_client_secret] instead.
-    /// 
+    ///
     /// # Arguments
     /// * `client_id` - The client id of the client to get.
-    /// 
+    ///
     /// # Returns
     /// An [Option] containing the [Client] if it was found, or [None] if the client was not found.
-    /// 
+    ///
     /// # Errors
     /// If the client provider fails to get the client, through whatever error.
     /// This error will later be returned through [OAuthError::ProviderImplementationError](crate::common::OAuthError::ProviderImplementationError).
     async fn get_client_by_id(&self, client_id: &str) -> Result<Option<Client>, Self::Error>;
 
     /// Check if a client is allowed to use a set of scopes.
-    /// 
+    ///
     /// # Implementation notes
     /// Ownership of the scopes is transferred to the client provider, so a good practise is to
     /// convert it into an iterator and filter out the scopes the client is not allowed to use,
     /// returning the Vec returned with collect.
-    /// 
+    ///
     /// # Arguments
     /// * `client` - The client to check the scopes for.
     /// * `scopes` - The scopes to check.
-    /// 
+    ///
     /// # Returns
     /// A [Vec] containing the scopes that were in the original requested scopes, with all the scopes that the client is not allowed to use removed.
-    /// 
+    ///
     /// # Errors
     /// If the client provider fails to check the scopes, through whatever error.
     /// This error will later be returned through [OAuthError::ProviderImplementationError](crate::common::OAuthError::ProviderImplementationError).
@@ -80,19 +80,19 @@ pub trait ClientProvider: 'static + Send + Sync {
     ) -> Result<Vec<String>, Self::Error>;
 
     /// Verify a client secret.
-    /// 
+    ///
     /// # Implementation notes
     /// Please ensure that the client_secret is stored in a hashed form, and that the client_secret is hashed before comparing.
     /// Good algorithms for this are bcrypt, scrypt or argon2.
     /// If another format is used, please ensure it is compared in a constant time manner.
-    /// 
+    ///
     /// # Arguments
     /// * `client` - The client to verify the secret for.
     /// * `client_secret` - The client secret to verify.
-    /// 
+    ///
     /// # Returns
     /// A [bool] indicating if the client secret is valid.
-    /// 
+    ///
     /// # Errors
     /// If the client provider fails to verify the client secret, through whatever error.
     /// This error will later be returned through [OAuthError::ProviderImplementationError](crate::common::OAuthError::ProviderImplementationError).

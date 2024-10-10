@@ -105,9 +105,8 @@ impl<U: 'static, E: 'static> OAuthManager<U, E> {
         let validated = self.validate_token_request(req).await?;
 
         let scope = match &validated.grant_type {
-            GrantType::AuthorizationCode { scope, .. } | GrantType::RefreshToken(RefreshGrant { scope, .. }) => {
-                Some(scope.join(" "))
-            }
+            GrantType::AuthorizationCode { scope, .. }
+            | GrantType::RefreshToken(RefreshGrant { scope, .. }) => Some(scope.join(" ")),
             GrantType::ClientCredentials => None,
         };
 

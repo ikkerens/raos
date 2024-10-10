@@ -1,7 +1,7 @@
 use crate::{
     authorize::{AuthorizationRequest, ResponseType},
+    common::{Client, CodeChallenge},
     test::mock::mocked_oauth_manager,
-    common::{Client, CodeChallenge}
 };
 use mockall::predicate::eq;
 

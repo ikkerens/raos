@@ -39,7 +39,7 @@ impl<U: 'static, E: 'static> OAuthManager<U, E> {
     /// # Errors
     /// This function can return an [OAuthError] if the request is invalid,
     /// or if the [AuthorizationProvider](crate::authorize::AuthorizationProvider) or [ClientProvider](crate::common::ClientProvider) return an error.
-    /// 
+    ///
     /// # Example
     /// ```
     /// # use raos::{

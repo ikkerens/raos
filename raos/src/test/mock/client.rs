@@ -1,6 +1,6 @@
-use mockall::mock;
-use async_trait::async_trait;
 use crate::common::{Client, ClientProvider};
+use async_trait::async_trait;
+use mockall::mock;
 
 mock! {
     pub ClientProvider {}

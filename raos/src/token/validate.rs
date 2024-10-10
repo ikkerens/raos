@@ -1,9 +1,9 @@
+use crate::token::RefreshGrant;
 use crate::{
     common::{Client, OAuthError, OAuthValidationError},
     manager::OAuthManager,
     token::{RequestedGrantType, TokenRequest},
 };
-use crate::token::RefreshGrant;
 
 /// A validated token request.
 pub struct ValidatedTokenRequest<OwnerId> {
@@ -22,7 +22,7 @@ pub enum GrantType<OwnerId> {
         /// The resource owner that authorized the code.
         resource_owner: OwnerId,
         /// The requested scope.
-        scope: Vec<String>
+        scope: Vec<String>,
     },
     /// The client is requesting an access token using a refresh token.
     RefreshToken(RefreshGrant<OwnerId>),
@@ -32,18 +32,18 @@ impl<U: 'static, E: 'static> OAuthManager<U, E> {
     /// Validate an incoming token request from a client.
     /// This function will validate the incoming request, and then return a [ValidatedTokenRequest]
     /// that contains the information needed to generate the token.
-    /// 
+    ///
     /// # Parameters
     /// - `req` - The parsed incoming request from the client, represented by a [TokenRequest]
-    /// 
+    ///
     /// # Returns
     /// A [ValidatedTokenRequest] that contains the information needed to generate the token.
-    /// 
+    ///
     /// # Errors
     /// This function can return an [OAuthError] if the request is invalid,
     /// or if the [TokenProvider](crate::token::TokenProvider), [AuthorizationProvider](crate::authorize::AuthorizationProvider)
     /// or the [ClientProvider](crate::common::ClientProvider) return an error.
-    /// 
+    ///
     /// # Example
     /// ```
     /// # use raos::{

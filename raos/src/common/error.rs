@@ -20,7 +20,7 @@ pub enum OAuthValidationError {
         /// The expected request method.
         expected: FrontendRequestMethod,
         /// The actual request method.
-        actual: FrontendRequestMethod
+        actual: FrontendRequestMethod,
     },
     /// The client (id) does not exist.
     #[error("Client (id) does not exist")]

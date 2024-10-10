@@ -1,13 +1,13 @@
-use mockall::mock;
-use async_trait::async_trait;
 use crate::{
     common::Client,
-    token::{GrantType, RefreshGrant, Token, TokenProvider}
+    token::{GrantType, RefreshGrant, Token, TokenProvider},
 };
+use async_trait::async_trait;
+use mockall::mock;
 
 mock! {
     pub TokenProvider {}
-    
+
     #[async_trait]
     impl TokenProvider for TokenProvider {
         type OwnerId = u32;

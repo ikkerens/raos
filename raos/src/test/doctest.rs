@@ -1,16 +1,16 @@
+use crate::authorize::AuthorizationResult;
 use crate::{
     authorize::AuthorizationProvider,
     common::{Client, ClientProvider, CodeChallenge, Grant},
     manager::OAuthManager,
-    token::{GrantType, RefreshGrant, Token, TokenProvider}
+    token::{GrantType, RefreshGrant, Token, TokenProvider},
 };
 use async_trait::async_trait;
 use std::{
-    sync::LazyLock,
     string::ToString,
-    time::{Duration, Instant}
+    sync::LazyLock,
+    time::{Duration, Instant},
 };
-use crate::authorize::AuthorizationResult;
 
 static DOCTEST_CLIENT: LazyLock<Client> = LazyLock::new(|| Client {
     client_id: "CLIENT_ID".to_string(),
@@ -46,11 +46,19 @@ impl ClientProvider for DocTestClientProvider {
         }
     }
 
-    async fn allow_client_scopes(&self, _client: &Client, scopes: Vec<String>) -> Result<Vec<String>, Self::Error> {
+    async fn allow_client_scopes(
+        &self,
+        _client: &Client,
+        scopes: Vec<String>,
+    ) -> Result<Vec<String>, Self::Error> {
         Ok(scopes)
     }
 
-    async fn verify_client_secret(&self, _client: &Client, client_secret: &str) -> Result<bool, Self::Error> {
+    async fn verify_client_secret(
+        &self,
+        _client: &Client,
+        client_secret: &str,
+    ) -> Result<bool, Self::Error> {
         Ok(client_secret == "CLIENT_SECRET")
     }
 }
@@ -62,15 +70,24 @@ impl AuthorizationProvider for DocTestAuthorizationProvider {
     type OwnerId = u32;
     type Error = ();
 
-    async fn authorize_grant(&self, _grant: &Grant<Self::OwnerId>) -> Result<AuthorizationResult, Self::Error> {
+    async fn authorize_grant(
+        &self,
+        _grant: &Grant<Self::OwnerId>,
+    ) -> Result<AuthorizationResult, Self::Error> {
         Ok(AuthorizationResult::Authorized)
     }
 
-    async fn generate_code_for_grant(&self, _grant: Grant<Self::OwnerId>) -> Result<String, Self::Error> {
+    async fn generate_code_for_grant(
+        &self,
+        _grant: Grant<Self::OwnerId>,
+    ) -> Result<String, Self::Error> {
         Ok("AUTHORIZATION_CODE".to_string())
     }
 
-    async fn exchange_code_for_grant(&self, code: String) -> Result<Option<Grant<Self::OwnerId>>, Self::Error> {
+    async fn exchange_code_for_grant(
+        &self,
+        code: String,
+    ) -> Result<Option<Grant<Self::OwnerId>>, Self::Error> {
         if code == "AUTHORIZATION_CODE" {
             Ok(Some(Grant {
                 owner_id: 1,
@@ -112,10 +129,7 @@ impl TokenProvider for DocTestTokenProvider {
         _refresh_token: String,
     ) -> Result<Option<RefreshGrant<Self::OwnerId>>, Self::Error> {
         if _refresh_token == "REFRESH_TOKEN" {
-            Ok(Some(RefreshGrant {
-                resource_owner: 1,
-                scope: vec!["SCOPE".to_string()],
-            }))
+            Ok(Some(RefreshGrant { resource_owner: 1, scope: vec!["SCOPE".to_string()] }))
         } else {
             Ok(None)
         }

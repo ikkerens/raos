@@ -1,13 +1,13 @@
-#[cfg(any(test, feature = "_doctest"))]
-mod request;
-#[cfg(test)]
-mod client;
-#[cfg(test)]
-mod token;
 #[cfg(test)]
 mod authorization;
 #[cfg(test)]
+mod client;
+#[cfg(test)]
 mod manager;
+#[cfg(any(test, feature = "_doctest"))]
+mod request;
+#[cfg(test)]
+mod token;
 
 #[cfg(test)]
 pub(crate) use authorization::*;

@@ -13,12 +13,12 @@ pub enum CodeChallenge {
     /// A plain code challenge is used.
     Plain {
         /// The plain-text code challenge sent by the client.
-        code_challenge: String
+        code_challenge: String,
     },
     /// A S256 code challenge is used.
     S256 {
         /// The SHA-256 code challenge hashed and sent by the client.
-        code_challenge: String
+        code_challenge: String,
     },
 }
 
@@ -45,9 +45,7 @@ mod test {
     fn test_code_challenge_verify() {
         use super::CodeChallenge;
 
-        let plain_challenge = CodeChallenge::Plain {
-            code_challenge: "verifier".to_string(),
-        };
+        let plain_challenge = CodeChallenge::Plain { code_challenge: "verifier".to_string() };
         let s256_challenge = CodeChallenge::S256 {
             // This is the correct challenge for the verifier "code_challenge".
             code_challenge: "qoJXAtQ-gjzfDmoMrHt1a2AFVe1Tn3-HX0VC2_UtezA".to_string(),

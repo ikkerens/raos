@@ -1,6 +1,6 @@
 use crate::{
+    manager::OAuthManager,
     test::mock::{MockAuthorizationProvider, MockClientProvider, MockTokenProvider},
-    manager::OAuthManager
 };
 
 pub(crate) fn mocked_oauth_manager<F>(setup: F) -> OAuthManager<u32, ()>

@@ -23,12 +23,12 @@ pub enum RequestedGrantType {
         /// The authorization code.
         code: String,
         /// The code verifier used to answer the PKCE challenge.
-        code_verifier: String
+        code_verifier: String,
     },
     /// The client is requesting an access token using a refresh token.
     RefreshToken {
         /// The refresh token.
-        refresh_token: String
+        refresh_token: String,
     },
 }
 

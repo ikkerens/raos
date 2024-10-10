@@ -8,17 +8,17 @@ pub enum FrontendResponse {
     /// A successful JSON response.
     Success {
         /// The JSON data to send back to the client.
-        json: serde_json::Value
+        json: serde_json::Value,
     },
     /// An error response.
     Error {
         /// The error to send back to the client.
-        error: PublicOAuthErrorBody
+        error: PublicOAuthErrorBody,
     },
     /// A redirect response.
     Redirect {
         /// The location to redirect the client to.
-        location: Url
+        location: Url,
     },
 }
 

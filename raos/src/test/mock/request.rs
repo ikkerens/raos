@@ -40,7 +40,7 @@ impl FrontendRequest for RequestFromRawHttp {
 ///
 /// # Returns
 /// A [RequestFromRawHttp] that can be used to test the OAuthManager.
-/// 
+///
 /// # Example
 /// See [test_request_from_raw_http] for an example of how to use this function.
 pub fn request_from_raw_http(request: &str) -> RequestFromRawHttp {
@@ -74,29 +74,29 @@ pub fn request_from_raw_http(request: &str) -> RequestFromRawHttp {
     let body = request.map(|s| s.trim().to_string()).collect::<Vec<String>>().join("\n");
     let body = serde_urlencoded::from_str(&body).unwrap();
 
-    RequestFromRawHttp {
-        method,
-        query,
-        headers,
-        body,
-    }
+    RequestFromRawHttp { method, query, headers, body }
 }
 
 #[test]
 fn test_request_from_raw_http() {
-    let request = request_from_raw_http(r#"
+    let request = request_from_raw_http(
+        r#"
          GET /authorize?client_id=1234&response_type=code HTTP/1.1
          Host: localhost:8080
          Content-Type: application/x-www-form-urlencoded
          
          code_challenge=5678&code_challenge_method=S256
-     "#);
+     "#,
+    );
 
     assert_eq!(request.request_method(), FrontendRequestMethod::GET);
     assert_eq!(request.query_param("client_id"), Some("1234".to_string()));
     assert_eq!(request.query_param("response_type"), Some("code".to_string()));
     assert_eq!(request.header_param("Host"), Some("localhost:8080".to_string()));
-    assert_eq!(request.header_param("Content-Type"), Some("application/x-www-form-urlencoded".to_string()));
+    assert_eq!(
+        request.header_param("Content-Type"),
+        Some("application/x-www-form-urlencoded".to_string())
+    );
     assert_eq!(request.body_param("code_challenge"), Some("5678".to_string()));
     assert_eq!(request.body_param("code_challenge_method"), Some("S256".to_string()));
 }
