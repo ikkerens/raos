@@ -3,6 +3,7 @@ name = "raos_actix"
 version = "0.0.0-dev"
 edition = "2021"
 description = "Async wrapper for raos using actix-web"
+repository = "https://github.com/ikkerens/raos"
 license = "MIT"
 
 [dependencies]
@@ -13,7 +14,7 @@ url = "2"
 
 [dev-dependencies]
 actix-web = { version = "4", features = ["macros"] }
-test_example_support = { path = "../test_example_support" }
+example_support = { path = "../example_support" }
 
 [[example]]
 name = "actix"

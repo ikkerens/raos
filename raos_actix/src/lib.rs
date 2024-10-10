@@ -1,3 +1,17 @@
+#![forbid(unsafe_code)]
+#![warn(
+    missing_docs,
+    rust_2018_idioms,
+    unreachable_pub
+)]
+
+//! # RAOS-actix
+//!
+//! ## In development
+//!
+//! **R**ust **A**sync **O**auth **S**erver
+//! Actix wrapper for RAOS.
+
 use std::{collections::HashMap, convert::Infallible};
 
 use actix_web::{
@@ -8,6 +22,8 @@ use futures::{future::LocalBoxFuture, FutureExt};
 
 use raos::common::{FrontendRequest, FrontendRequestMethod, FrontendResponse, FrontendResponseExt};
 
+/// Actix request wrapper for RAOS.
+/// This implements [FrontendRequest] for actix requests, also implements the trait required to function as an extractor via [FromRequest].
 pub struct ActixOAuthRequest {
     method: FrontendRequestMethod,
     headers: HashMap<String, String>,
@@ -66,6 +82,8 @@ impl FrontendRequest for ActixOAuthRequest {
     }
 }
 
+/// Actix response wrapper for RAOS.
+/// This implements [Responder] for actix responses and can be constructed from any type that implements [FrontendResponseExt].
 pub struct ActixOAuthResponse {
     req: FrontendResponse,
 }

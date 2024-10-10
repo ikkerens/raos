@@ -2,17 +2,34 @@ use base64::{prelude::BASE64_STANDARD, Engine};
 
 use crate::common::{FrontendRequest, FrontendRequestMethod, OAuthValidationError};
 
+/// A parsed request to exchange an authorization code, refresh code or client credentials for an access token.
 pub struct TokenRequest {
+    /// The client ID.
     pub client_id: String,
+    /// The client secret.
     pub client_secret: Option<String>,
+    /// The type of grant requested by the client.
     pub grant_type: RequestedGrantType,
+    /// The requested scope, used when refreshing a token using the refresh token grant type.
     pub scope: Option<Vec<String>>,
 }
 
+/// The type of grant requested by the client.
 pub enum RequestedGrantType {
+    /// The client is requesting an access token using client credentials.
     ClientCredentials,
-    AuthorizationCode { code: String, code_verifier: String },
-    RefreshToken { refresh_token: String },
+    /// The client is requesting an access token using an authorization code.
+    AuthorizationCode {
+        /// The authorization code.
+        code: String,
+        /// The code verifier used to answer the PKCE challenge.
+        code_verifier: String
+    },
+    /// The client is requesting an access token using a refresh token.
+    RefreshToken {
+        /// The refresh token.
+        refresh_token: String
+    },
 }
 
 impl TryFrom<&dyn FrontendRequest> for TokenRequest {

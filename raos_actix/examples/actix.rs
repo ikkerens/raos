@@ -2,7 +2,7 @@ use actix_web::{get, post, web, App, HttpServer};
 
 use raos::{common::Client, manager::OAuthManager, util::InMemoryAuthorizationProvider};
 use raos_actix::{ActixOAuthRequest, ActixOAuthResponse};
-use test_example_support::{DumbTokenProvider, VecClient, VecClientProvider};
+use example_support::{DumbTokenProvider, VecClient, VecClientProvider};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

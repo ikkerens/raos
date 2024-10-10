@@ -4,7 +4,11 @@ use dashmap::DashMap;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 
 use crate::{async_trait, authorize::AuthorizationProvider, common::Grant};
+use crate::authorize::AuthorizationResult;
 
+/// An in-memory authorization provider that stores the grants in a `DashMap`.
+/// This is useful for testing purposes, or for applications that do not require persistent storage.
+/// Please note, this authorization provider will approve consent for all grants.
 pub struct InMemoryAuthorizationProvider<U, E> {
     codes: DashMap<String, Grant<U>>,
     _phantom: PhantomData<E>,
@@ -25,7 +29,11 @@ where
     type OwnerId = U;
     type Error = E;
 
-    async fn authorize_grant(&self, grant: Grant<Self::OwnerId>) -> Result<String, Self::Error> {
+    async fn authorize_grant(&self, _grant: &Grant<Self::OwnerId>) -> Result<AuthorizationResult, Self::Error> {
+        Ok(AuthorizationResult::Authorized)
+    }
+
+    async fn generate_code_for_grant(&self, grant: Grant<Self::OwnerId>) -> Result<String, Self::Error> {
         let random_string: String =
             thread_rng().sample_iter(&Alphanumeric).take(50).map(char::from).collect();
 

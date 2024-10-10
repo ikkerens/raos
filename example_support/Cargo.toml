@@ -1,5 +1,5 @@
 [package]
-name = "test_example_support"
+name = "example_support"
 version = "0.0.0-dev"
 edition = "2021"
 publish = false
@@ -8,3 +8,4 @@ publish = false
 raos = { path = "../raos", version = "=0.0.0-dev" }
 rand = "0.8"
 tokio = { version = "1", features = ["sync"] }
+serde_urlencoded = "0.7"

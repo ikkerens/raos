@@ -2,13 +2,33 @@ use url::Url;
 
 use crate::common::{OAuthError, PublicOAuthError, PublicOAuthErrorBody};
 
+/// The FrontendResponse enum is used to send responses back to the client.
+/// This enum is used to send JSON responses, error responses, and redirects.
 pub enum FrontendResponse {
-    Success { json: serde_json::Value },
-    Error { error: PublicOAuthErrorBody },
-    Redirect { location: Url },
+    /// A successful JSON response.
+    Success {
+        /// The JSON data to send back to the client.
+        json: serde_json::Value
+    },
+    /// An error response.
+    Error {
+        /// The error to send back to the client.
+        error: PublicOAuthErrorBody
+    },
+    /// A redirect response.
+    Redirect {
+        /// The location to redirect the client to.
+        location: Url
+    },
 }
 
+/// The FrontendResponseExt trait is used to convert various response types like
+/// [AuthorizationResponse](crate::authorize::AuthorizationResponse) and [TokenResponse](crate::token::TokenResponse)
+/// into a [FrontendResponse].
+///
+/// This trait is implemented for [Result<R, OAuthError<E>>](OAuthError) where R implements FrontendResponseExt.
 pub trait FrontendResponseExt {
+    /// Convert the response into a FrontendResponse.
     fn into_frontend_response(self) -> FrontendResponse;
 }
 

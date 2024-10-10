@@ -1,6 +1,8 @@
-use crate::authorize::{AuthorizationRequest, ResponseType};
-use crate::common::{Client, CodeChallenge};
-use crate::test::mocked_oauth_manager;
+use crate::{
+    authorize::{AuthorizationRequest, ResponseType},
+    test::mock::mocked_oauth_manager,
+    common::{Client, CodeChallenge}
+};
 use mockall::predicate::eq;
 
 #[tokio::test]

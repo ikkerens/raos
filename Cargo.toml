@@ -2,6 +2,6 @@
 members = [
     "raos",
     "raos_actix",
-    "test_example_support"
+    "example_support"
 ]
 resolver = "2"

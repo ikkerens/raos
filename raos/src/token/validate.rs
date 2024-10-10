@@ -3,19 +3,69 @@ use crate::{
     manager::OAuthManager,
     token::{RequestedGrantType, TokenRequest},
 };
+use crate::token::RefreshGrant;
 
+/// A validated token request.
 pub struct ValidatedTokenRequest<OwnerId> {
+    /// The client that is requesting the token.
     pub client: Client,
+    /// The type of grant requested by the client.
     pub grant_type: GrantType<OwnerId>,
 }
 
+/// The type of grant requested by the client.
 pub enum GrantType<OwnerId> {
+    /// The client is requesting an access token using client credentials.
     ClientCredentials,
-    AuthorizationCode { resource_owner: OwnerId, scope: Vec<String> },
-    RefreshToken { resource_owner: OwnerId, scope: Vec<String> },
+    /// The client is requesting an access token using an authorization code.
+    AuthorizationCode {
+        /// The resource owner that authorized the code.
+        resource_owner: OwnerId,
+        /// The requested scope.
+        scope: Vec<String>
+    },
+    /// The client is requesting an access token using a refresh token.
+    RefreshToken(RefreshGrant<OwnerId>),
 }
 
 impl<U: 'static, E: 'static> OAuthManager<U, E> {
+    /// Validate an incoming token request from a client.
+    /// This function will validate the incoming request, and then return a [ValidatedTokenRequest]
+    /// that contains the information needed to generate the token.
+    /// 
+    /// # Parameters
+    /// - `req` - The parsed incoming request from the client, represented by a [TokenRequest]
+    /// 
+    /// # Returns
+    /// A [ValidatedTokenRequest] that contains the information needed to generate the token.
+    /// 
+    /// # Errors
+    /// This function can return an [OAuthError] if the request is invalid,
+    /// or if the [TokenProvider](crate::token::TokenProvider), [AuthorizationProvider](crate::authorize::AuthorizationProvider)
+    /// or the [ClientProvider](crate::common::ClientProvider) return an error.
+    /// 
+    /// # Example
+    /// ```
+    /// # use raos::{
+    /// #     test::doctest::oauth_manager_from_application_state,
+    /// #     token::{RequestedGrantType, TokenRequest}
+    /// # };
+    ///
+    /// let manager = oauth_manager_from_application_state();
+    /// let req = TokenRequest {
+    ///     client_id: "CLIENT_ID".to_string(),
+    ///     client_secret: Some("CLIENT_SECRET".to_string()),
+    ///     grant_type: RequestedGrantType::AuthorizationCode {
+    ///         code: "AUTHORIZATION_CODE".to_string(),
+    ///         code_verifier: "CODE_CHALLENGE".to_string(),
+    ///     },
+    ///     scope: None
+    /// };
+    ///
+    /// # tokio_test::block_on(async {
+    /// let result = manager.validate_token_request(req).await;
+    /// assert!(result.is_ok());
+    /// # });
     pub async fn validate_token_request(
         &self,
         req: TokenRequest,
@@ -74,10 +124,7 @@ impl<U: 'static, E: 'static> OAuthManager<U, E> {
                     }
                 }
 
-                GrantType::RefreshToken {
-                    resource_owner: refresh_grant.resource_owner,
-                    scope: refresh_grant.scope,
-                }
+                GrantType::RefreshToken(refresh_grant)
             }
             RequestedGrantType::AuthorizationCode { code, code_verifier } => {
                 let Some(grant) = self

@@ -5,6 +5,9 @@ use crate::{
     token::TokenProvider,
 };
 
+/// The OAuthManagerBuilder is used to build an [OAuthManager].
+/// This builder is used to configure the OAuthManager with the necessary providers,
+/// and to set the configuration options.
 pub struct OAuthManagerBuilder<C, A, T> {
     client_provider: Option<C>,
     authorization_provider: Option<A>,
@@ -24,6 +27,9 @@ impl OAuthManagerBuilder<NeedsClientProvider, NeedsAuthorizationProvider, NeedsT
 }
 
 impl<A, T> OAuthManagerBuilder<NeedsClientProvider, A, T> {
+    /// Set the client provider for the OAuthManager.
+    /// The client provider is used to get information about clients that are making requests.
+    /// See [ClientProvider] for more information.
     pub fn client_provider<C>(self, client_provider: C) -> OAuthManagerBuilder<C, A, T>
     where
         C: ClientProvider,
@@ -38,6 +44,9 @@ impl<A, T> OAuthManagerBuilder<NeedsClientProvider, A, T> {
 }
 
 impl<C, T> OAuthManagerBuilder<C, NeedsAuthorizationProvider, T> {
+    /// Set the authorization provider for the OAuthManager.
+    /// The authorization provider is used to authorize grants and exchange codes for grants.
+    /// See [AuthorizationProvider] for more information.
     pub fn authorization_provider<A>(
         self,
         authorization_provider: A,
@@ -55,6 +64,9 @@ impl<C, T> OAuthManagerBuilder<C, NeedsAuthorizationProvider, T> {
 }
 
 impl<C, A> OAuthManagerBuilder<C, A, NeedsTokenProvider> {
+    /// Set the token provider for the OAuthManager.
+    /// The token provider is used to generate and validate tokens and refresh tokens.
+    /// See [TokenProvider] for more information.
     pub fn token_provider<T>(self, token_provider: T) -> OAuthManagerBuilder<C, A, T>
     where
         T: TokenProvider,
@@ -80,11 +92,17 @@ impl<C, A, T> OAuthManagerBuilder<C, A, T> {
         self
     }
 
+    /// Calling disallow_plain_code_challenge will disallow the use of plain code challenges.
+    /// If this function is called, the code challenge must be a S256 challenge.
+    /// This is a security measure to prevent code injection attacks.
     pub fn disallow_plain_code_challenge(mut self) -> Self {
         self.config.disallow_plain_code_challenge = true;
         self
     }
 
+    /// Set the authorization server identifier.
+    /// This is used to identify the authorization server in the authorization response.
+    /// This is an optional setting.
     pub fn set_authorization_server_identifier(mut self, identifier: String) -> Self {
         self.config.authorization_server_identifier = Some(identifier);
         self
@@ -97,6 +115,8 @@ where
     A: AuthorizationProvider<OwnerId = O, Error = E>,
     T: TokenProvider<OwnerId = O, Error = E>,
 {
+    /// Build the OAuthManager with the configured providers.
+    /// This function will consume the builder and return an OAuthManager.
     pub fn build(self) -> OAuthManager<O, E> {
         OAuthManager {
             client_provider: Box::new(self.client_provider.unwrap()),
@@ -107,6 +127,12 @@ where
     }
 }
 
+/// Marker type for the [OAuthManagerBuilder] to indicate that the client provider is needed,
+/// it does not fulfill the trait requirements causing it to prevent the manager from being built.
 pub struct NeedsClientProvider;
+/// Marker type for the [OAuthManagerBuilder] to indicate that the authorization provider is needed,
+/// it does not fulfill the trait requirements causing it to prevent the manager from being built.
 pub struct NeedsAuthorizationProvider;
+/// Marker type for the [OAuthManagerBuilder] to indicate that the token provider is needed,
+/// it does not fulfill the trait requirements causing it to prevent the manager from being built.
 pub struct NeedsTokenProvider;

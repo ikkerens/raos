@@ -6,17 +6,64 @@ use crate::{
     manager::OAuthManager,
 };
 
+/// A validated authorization request from a client.
+/// This struct contains all the information needed to authorize a client's request.
+/// This struct is produced by validating an [AuthorizationRequest] from a client.
 #[derive(Debug)]
 pub struct ValidatedAuthorizationRequest {
+    /// The response type expected in the request.
     pub response_type: ResponseType,
+    /// The client making the request, including all its information obtained from the [ClientProvider](crate::common::ClientProvider).
     pub client: Client,
+    /// The code challenge and method used in the request.
     pub code_challenge: CodeChallenge,
+    /// The redirect URI the client expects to be redirected to, or the only one the client has registered.
     pub redirect_uri: Url,
+    /// The scopes requested by the client, after being filtered by the [ClientProvider](crate::common::ClientProvider).
     pub scopes: Vec<String>,
+    /// The state of the request to be sent back to the client in the response.
     pub state: Option<String>,
 }
 
 impl<U: 'static, E: 'static> OAuthManager<U, E> {
+    /// Validate an incoming authorization request from a client.
+    /// This function will validate the incoming request, and then return a [ValidatedAuthorizationRequest]
+    /// that contains the information needed to authorize the request.
+    ///
+    /// # Parameters
+    /// - `req` - The parsed incoming request from the client, represented by an [AuthorizationRequest]
+    ///
+    /// # Returns
+    /// A [ValidatedAuthorizationRequest] that contains the information needed to authorize the request.
+    ///
+    /// # Errors
+    /// This function can return an [OAuthError] if the request is invalid,
+    /// or if the [AuthorizationProvider](crate::authorize::AuthorizationProvider) or [ClientProvider](crate::common::ClientProvider) return an error.
+    /// 
+    /// # Example
+    /// ```
+    /// # use raos::{
+    /// #     test::doctest::oauth_manager_from_application_state,
+    /// #     authorize::{AuthorizationRequest, ResponseType},
+    /// #     common::CodeChallenge
+    /// # };
+    ///
+    /// let manager = oauth_manager_from_application_state();
+    /// let req = AuthorizationRequest {
+    ///     response_type: ResponseType::Code,
+    ///     client_id: "CLIENT_ID".to_string(),
+    ///     code_challenge: CodeChallenge::Plain { code_challenge: "CODE_CHALLENGE".to_string() },
+    ///     has_openid_nonce: false,
+    ///     redirect_uri: Some("https://example.com".to_string()),
+    ///     scope: Some("SCOPE".to_string()),
+    ///     state: Some("STATE".to_string()),
+    /// };
+    ///
+    /// # tokio_test::block_on(async {
+    /// let result = manager.validate_authorization_request(req).await;
+    /// assert!(result.is_ok());
+    /// # });
+    /// ```
     pub async fn validate_authorization_request(
         &self,
         req: AuthorizationRequest,

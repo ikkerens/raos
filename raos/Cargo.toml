@@ -3,6 +3,7 @@ name = "raos"
 version = "0.0.0-dev"
 edition = "2021"
 description = "Async Rust implementation of the OAuth 2.1 Authorization Server"
+repository = "https://github.com/ikkerens/raos"
 license = "MIT"
 
 [dependencies]
@@ -21,8 +22,13 @@ dashmap = { version = "6", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+tokio-test = { version = "0.4" }
 mockall = "0.13"
 
 [features]
 default = []
 memory-impls = ["rand", "dashmap"]
+_doctest = []
+
+[package.metadata.docs.rs]
+features = ["_doctest"]

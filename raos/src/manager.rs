@@ -7,7 +7,10 @@ use crate::{
     token::TokenProvider,
 };
 
-#[allow(dead_code)]
+/// The OAuthManager is the main struct that is used to interact with the OAuth2.1 server.
+/// It can be used to authorize requests, exchange codes for grants, and validate tokens.
+/// 
+/// The OAuthManager is created through the [OAuthManagerBuilder](OAuthManagerBuilder) which can be obtained with the [OAuthManager::builder](OAuthManager::builder) function.
 pub struct OAuthManager<OwnerIdType, ErrorType> {
     pub(crate) client_provider: Box<dyn ClientProvider<Error = ErrorType>>,
     pub(crate) authorization_provider:
@@ -17,6 +20,8 @@ pub struct OAuthManager<OwnerIdType, ErrorType> {
 }
 
 impl OAuthManager<(), ()> {
+    /// Create a new OAuthManagerBuilder to build an OAuthManager.
+    /// This function is the entry point to create an OAuthManager.
     pub fn builder(
     ) -> OAuthManagerBuilder<NeedsClientProvider, NeedsAuthorizationProvider, NeedsTokenProvider>
     {

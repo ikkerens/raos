@@ -14,6 +14,39 @@ mod response;
 mod validate;
 
 impl<U: 'static, E: 'static> OAuthManager<U, E> {
+    /// Handle an incoming authorization request from a client.
+    /// This function will parse the incoming request, validate it, and then authorize the request,
+    /// returning an [AuthorizationResponse] that contains the information for the client to use.
+    ///
+    /// # Parameters
+    /// - `req` - The unparsed incoming request from the client, represented by a [FrontendRequest]
+    /// - `owner_id` - The ID of the resource owner that is authorizing the request
+    ///
+    /// # Returns
+    /// An [AuthorizationResponse] that can be used to build a response to the client, which in turn
+    /// implements the [FrontendResponse] trait.
+    ///
+    /// # Errors
+    /// This function can return an [OAuthError] if the request is invalid, or if the authorization
+    /// provider fails to authorize the request.
+    ///
+    /// # Example
+    /// ```
+    /// # use raos::test::{
+    /// #     doctest::{oauth_manager_from_application_state, owner_id_from_session},
+    /// #     mock::request_from_raw_http
+    /// # };
+    ///
+    /// let manager = oauth_manager_from_application_state();
+    /// let req = request_from_raw_http(r#"
+    ///     GET /authorize?client_id=CLIENT_ID&redirect_uri=https://example.com&response_type=code&code_challenge=CODE_CHALLENGE&scope=SCOPE&state=STATE HTTP/1.1
+    /// "#);
+    ///
+    /// # tokio_test::block_on(async {
+    /// let result = manager.handle_authorization_request(req, owner_id_from_session()).await;
+    /// assert!(result.is_ok());
+    /// # });
+    /// ```
     pub async fn handle_authorization_request(
         &self,
         req: impl FrontendRequest,
@@ -24,6 +57,49 @@ impl<U: 'static, E: 'static> OAuthManager<U, E> {
         self.handle_authorization(request, owner_id).await
     }
 
+    /// Handle an incoming authorization request from a client.
+    /// This function will validate the incoming request, and then authorize the request,
+    /// returning an [AuthorizationResponse] that contains the information for the client to use.
+    ///
+    /// # Parameters
+    /// - `req` - The parsed incoming request from the client, represented by an [AuthorizationRequest]
+    /// - `owner_id` - The ID of the resource owner that is authorizing the request
+    ///
+    /// # Returns
+    /// An [AuthorizationResponse] that can be used to build a response to the client, which in turn
+    /// implements the [FrontendResponse] trait.
+    ///
+    /// # Errors
+    /// This function can return an [OAuthError] if the request is invalid, or if the authorization
+    /// provider fails to authorize the request.
+    ///
+    /// # Example
+    /// ```
+    /// # use raos::{
+    /// #     test::{
+    /// #         doctest::{oauth_manager_from_application_state, owner_id_from_session},
+    /// #         mock::request_from_raw_http,
+    /// #     },
+    /// #     authorize::{AuthorizationRequest, ResponseType},
+    /// #     common::CodeChallenge
+    /// # };
+    ///
+    /// let manager = oauth_manager_from_application_state();
+    /// let req = AuthorizationRequest {
+    ///     response_type: ResponseType::Code,
+    ///     client_id: "CLIENT_ID".to_string(),
+    ///     code_challenge: CodeChallenge::Plain {code_challenge: "CODE_CHALLENGE".to_string()},
+    ///     has_openid_nonce: false,
+    ///     redirect_uri: Some("https://example.com".to_string()),
+    ///     scope: Some("SCOPE".to_string()),
+    ///     state: Some("STATE".to_string()),
+    /// };
+    ///
+    /// # tokio_test::block_on(async {
+    /// let result = manager.handle_authorization(req, owner_id_from_session()).await;
+    /// assert!(result.is_ok());
+    /// # });
+    /// ```
     pub async fn handle_authorization(
         &self,
         req: AuthorizationRequest,
@@ -42,12 +118,24 @@ impl<U: 'static, E: 'static> OAuthManager<U, E> {
             redirect_uri: validated.redirect_uri.clone(),
             code_challenge: validated.code_challenge,
         };
+        
+        let authorization_result = self.authorization_provider
+            .authorize_grant(&grant)
+            .await
+            .map_err(OAuthError::ProviderImplementationError)?;
+        match authorization_result {
+            AuthorizationResult::Authorized => {} // Continue normally
+            // TODO Add a way to prompt the resource owner for authentication or consent
+            AuthorizationResult::RequireAuthentication => return Err(OAuthError::AccessDenied),
+            AuthorizationResult::RequireScopeConsent(_) => return Err(OAuthError::AccessDenied),
+            AuthorizationResult::Unauthorized => return Err(OAuthError::AccessDenied)
+        }
 
         // After validation, exchange our grant for an authorization code that can later be exchanged
         // for a token by the client.
         let code = self
             .authorization_provider
-            .authorize_grant(grant)
+            .generate_code_for_grant(grant)
             .await
             .map_err(OAuthError::ProviderImplementationError)?;
 

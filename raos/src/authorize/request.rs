@@ -1,17 +1,29 @@
 use crate::common::{CodeChallenge, FrontendRequest, FrontendRequestMethod, OAuthValidationError};
 
+/// The response type expected in an authorization request.
 #[derive(Debug)]
 pub enum ResponseType {
+    /// The client is requesting an authorization code.
     Code,
 }
 
+/// A parsed authorization request from a client.
+/// This struct contains all the information needed to authorize a client's request.
+/// This is produced by parsing a [FrontendRequest] from a client.
 pub struct AuthorizationRequest {
+    /// The response type expected in the request.
     pub response_type: ResponseType,
+    /// The client ID of the client making the request.
     pub client_id: String,
+    /// The code challenge and method used in the request.
     pub code_challenge: CodeChallenge,
+    /// Whether the request has an OpenID nonce.
     pub has_openid_nonce: bool,
+    /// The redirect URI the client expects to be redirected to.
     pub redirect_uri: Option<String>,
+    /// The scope of the request, space separated
     pub scope: Option<String>,
+    /// The state of the request to be sent back to the client in the response.
     pub state: Option<String>,
 }
 

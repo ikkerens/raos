@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 #![warn(
-    // missing_docs,
+    missing_docs,
     rust_2018_idioms,
     unreachable_pub
 )]
@@ -16,12 +16,18 @@
 
 pub use async_trait::async_trait;
 
+/// The authorization module handles the authorization code flow.
 pub mod authorize;
+/// The builder module contains the builder for the manager.
 pub mod builder;
+/// The common module contains common types used throughout the library.
 pub mod common;
+/// The manager module contains the OAuthManager.
 pub mod manager;
+/// The token module contains the token provider trait, validation and flow.
 pub mod token;
+/// The util module contains utility functions.
 pub mod util;
-
-#[cfg(test)]
-mod test;
+/// Test module, contains test support code, unit tests and integration tests.
+#[cfg(any(test, feature = "_doctest"))]
+pub mod test;
