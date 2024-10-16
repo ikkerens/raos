@@ -3,7 +3,7 @@ name: Merge checks
 on: [push]
 
 jobs:
-  merge-checks:
+  clippy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout git repository
