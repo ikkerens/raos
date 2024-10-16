@@ -27,11 +27,13 @@ where
     E: Send + Sync,
 {
     type OwnerId = U;
+    type Extras = ();
     type Error = E;
 
     async fn authorize_grant(
         &self,
         _grant: &Grant<Self::OwnerId>,
+        _extras: &mut Option<Self::Extras>,
     ) -> Result<AuthorizationResult, Self::Error> {
         Ok(AuthorizationResult::Authorized)
     }

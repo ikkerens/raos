@@ -8,10 +8,14 @@ pub struct Client {
     /// The known redirect uris the client is allowed to use.
     pub redirect_uris: Vec<String>,
     /// Marks the client as confidential.
-    // TODO Explain confidentiality
+    ///
+    /// Confidential clients MUST authenticate with the authorization server, for example by using client credentials.
     pub confidential: bool,
     /// Whether this client is allowed to use openid connect features
-    // TODO Explain openid connect
+    ///
+    /// While this library does not have any inherent openid connect support, this option can be set
+    /// to allow skipping the code challenge requirement for openid connect clients, as long as they include
+    /// a nonce in the request.
     pub supports_openid_connect: bool,
 }
 
@@ -34,7 +38,7 @@ impl Client {
 ///
 /// This trait is used to help the library discover clients, verify the scopes a client is allowed to use and verify client secrets.
 #[async_trait]
-pub trait ClientProvider: 'static + Send + Sync {
+pub trait ClientProvider<Extras = ()>: 'static + Send + Sync {
     /// This is the error type that can be returned by the authorization provider implementing this trait.
     /// This type will need to match the Error used in [TokenProvider](crate::token::TokenProvider) and [AuthorizationProvider](crate::authorize::AuthorizationProvider).
     type Error;

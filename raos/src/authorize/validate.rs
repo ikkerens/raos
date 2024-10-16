@@ -25,7 +25,7 @@ pub struct ValidatedAuthorizationRequest {
     pub state: Option<String>,
 }
 
-impl<U: 'static, E: 'static> OAuthManager<U, E> {
+impl<U: 'static, E: 'static, Ex> OAuthManager<U, E, Ex> {
     /// Validate an incoming authorization request from a client.
     /// This function will validate the incoming request, and then return a [ValidatedAuthorizationRequest]
     /// that contains the information needed to authorize the request.

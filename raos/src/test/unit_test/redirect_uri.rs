@@ -45,7 +45,7 @@ async fn test_redirect_uri_format() {
         .expect("https://example.com/?some=value should pass");
     test("https://example.com/?some^value=check")
         .await
-        .expect("https://example.com/?some=value should pass");
+        .expect("https://example.com/?some^value=check should pass");
     test("https://example.com/#fragment")
         .await
         .expect_err("https://example.com/#fragment should not pass (fragment)");

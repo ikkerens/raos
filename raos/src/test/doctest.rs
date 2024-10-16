@@ -18,13 +18,13 @@ static DOCTEST_CLIENT: LazyLock<Client> = LazyLock::new(|| Client {
     ..Default::default()
 });
 
-/// Mock function to return a owner ID used in other tests
+/// Mock function to return an owner ID used in other tests
 pub fn owner_id_from_session() -> u32 {
     1
 }
 
-/// Mock function to return a oauth manager with basic data
-pub fn oauth_manager_from_application_state() -> OAuthManager<u32, ()> {
+/// Mock function to return an oauth manager with basic data
+pub fn oauth_manager_from_application_state() -> OAuthManager<u32, (), ()> {
     OAuthManager::builder()
         .client_provider(DocTestClientProvider)
         .authorization_provider(DocTestAuthorizationProvider)
@@ -68,11 +68,13 @@ struct DocTestAuthorizationProvider;
 #[async_trait]
 impl AuthorizationProvider for DocTestAuthorizationProvider {
     type OwnerId = u32;
+    type Extras = ();
     type Error = ();
 
     async fn authorize_grant(
         &self,
         _grant: &Grant<Self::OwnerId>,
+        _extras: &mut Option<Self::Extras>,
     ) -> Result<AuthorizationResult, Self::Error> {
         Ok(AuthorizationResult::Authorized)
     }

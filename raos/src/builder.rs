@@ -109,15 +109,15 @@ impl<C, A, T> OAuthManagerBuilder<C, A, T> {
     }
 }
 
-impl<C, A, T, O, E> OAuthManagerBuilder<C, A, T>
+impl<C, A, T, O, E, Ex> OAuthManagerBuilder<C, A, T>
 where
     C: ClientProvider<Error = E>,
-    A: AuthorizationProvider<OwnerId = O, Error = E>,
+    A: AuthorizationProvider<OwnerId = O, Error = E, Extras = Ex>,
     T: TokenProvider<OwnerId = O, Error = E>,
 {
     /// Build the OAuthManager with the configured providers.
     /// This function will consume the builder and return an OAuthManager.
-    pub fn build(self) -> OAuthManager<O, E> {
+    pub fn build(self) -> OAuthManager<O, E, Ex> {
         OAuthManager {
             client_provider: Box::new(self.client_provider.unwrap()),
             authorization_provider: Box::new(self.authorization_provider.unwrap()),

@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use serde::Serialize;
 use thiserror::Error;
 
-use crate::common::FrontendRequestMethod;
+use crate::common::{FrontendRequestMethod, FrontendResponse, FrontendResponseExt};
 
 /// The collection of errors that can happen during OAuth validation, excluding provider errors.
 #[derive(Error, Debug)]
@@ -69,6 +69,9 @@ pub enum OAuthError<E> {
     /// The request was denied access by the authorization provider or resource owner.
     #[error("Access denied")]
     AccessDenied,
+    /// The request requires resource owner interaction, such as authentication or scope consent.
+    #[error("Required scope consent")]
+    RequiresResourceOwnerInteraction(FrontendResponse),
     /// An error occurred during OAuth validation, these are usually errors returned from the library.
     #[error("OAuth validation failed: {0}")]
     ValidationFailed(OAuthValidationError),
@@ -113,6 +116,10 @@ impl<E> From<OAuthError<E>> for PublicOAuthError {
             ) => Self::InvalidScope,
             OAuthError::ValidationFailed(_) => Self::InvalidRequest,
             OAuthError::ProviderImplementationError(_) => Self::ServerError,
+            OAuthError::RequiresResourceOwnerInteraction(_) => {
+                // This should never happen, as this error is only used internally.
+                Self::AccessDenied
+            }
         }
     }
 }
@@ -139,9 +146,38 @@ impl PublicOAuthError {
     }
 }
 
+impl<E> FrontendResponseExt for OAuthError<E> {
+    fn into_frontend_response(self) -> FrontendResponse {
+        match self {
+            OAuthError::RequiresResourceOwnerInteraction(response) => response,
+            OAuthError::ValidationFailed(
+                OAuthValidationError::ClientDoesNotExist
+                | OAuthValidationError::MismatchedClientCredentials
+                | OAuthValidationError::NoRedirectUri
+                | OAuthValidationError::InvalidRedirectUri
+                | OAuthValidationError::UnknownRedirectUri,
+            ) => {
+                // If the request fails due to a missing, invalid, or mismatching redirect URI,
+                // or if the client identifier is missing or invalid,
+                // the authorization server SHOULD inform the resource owner of the error and
+                // MUST NOT automatically redirect the user agent to the invalid redirect URI.
+                // TODO Allow AS implementer to customize this response
+                let error: PublicOAuthError = self.into();
+                FrontendResponse::Error { error: error.into() }
+            }
+            _ => {
+                // TODO Some errors require a redirect back to the client, whereas some others require a message to the resource owner, this needs to be implemented
+                // TODO If this is an authorization error, make this a redirect and include state+iss
+                let error: PublicOAuthError = self.into();
+                FrontendResponse::Error { error: error.into() }
+            }
+        }
+    }
+}
+
 /// The body of a public OAuth error response.
 /// This struct is serialized into JSON to be sent back to the client.
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct PublicOAuthErrorBody {
     /// The error code to be sent back to the client.
     pub error: String,
@@ -151,6 +187,6 @@ pub struct PublicOAuthErrorBody {
 
 impl From<PublicOAuthError> for PublicOAuthErrorBody {
     fn from(value: PublicOAuthError) -> Self {
-        Self { error: format!("{value}"), error_description: value.to_description().to_string() }
+        Self { error: format!("{value}"), error_description: value.to_description().to_owned() }
     }
 }
