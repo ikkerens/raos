@@ -14,7 +14,7 @@ mod request;
 mod response;
 mod validate;
 
-impl<U: 'static, E: 'static> OAuthManager<U, E> {
+impl<U: 'static, E: 'static, Ex: 'static> OAuthManager<U, E, Ex> {
     /// Handle an incoming token request from a client.
     /// This function will parse the incoming request, validate it, and then generate a token,
     /// returning a [TokenResponse] that contains the information for the client to use.

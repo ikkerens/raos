@@ -1,9 +1,10 @@
 use url::Url;
 
-use crate::common::{OAuthError, PublicOAuthError, PublicOAuthErrorBody};
+use crate::common::{OAuthError, PublicOAuthErrorBody};
 
 /// The FrontendResponse enum is used to send responses back to the client.
 /// This enum is used to send JSON responses, error responses, and redirects.
+#[derive(Debug)]
 pub enum FrontendResponse {
     /// A successful JSON response.
     Success {
@@ -40,11 +41,7 @@ where
         // Convert the result into a FrontendResponse
         match self {
             Ok(r) => r.into_frontend_response(),
-            Err(e) => {
-                // TODO Some errors require a redirect back to the client, whereas some others require a message to the resource owner, this needs to be implemented
-                let error: PublicOAuthError = e.into();
-                FrontendResponse::Error { error: error.into() }
-            }
+            Err(e) => e.into_frontend_response(),
         }
     }
 }

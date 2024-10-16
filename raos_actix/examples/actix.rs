@@ -36,9 +36,9 @@ async fn main() -> std::io::Result<()> {
 #[get("/authorize")]
 async fn authorize(
     req: ActixOAuthRequest,
-    oauth: web::Data<OAuthManager<u32, ()>>,
+    oauth: web::Data<OAuthManager<u32, (), ()>>,
 ) -> ActixOAuthResponse {
-    let result = oauth.handle_authorization_request(req, 15).await;
+    let result = oauth.handle_authorization_request(req, 15, None).await;
     if let Err(ref e) = result {
         println!("Error: {e:#?}");
     }
@@ -48,7 +48,7 @@ async fn authorize(
 #[post("/token")]
 async fn token(
     req: ActixOAuthRequest,
-    oauth: web::Data<OAuthManager<u32, ()>>,
+    oauth: web::Data<OAuthManager<u32, (), ()>>,
 ) -> ActixOAuthResponse {
     let result = oauth.handle_token_request(req).await;
     if let Err(ref e) = result {

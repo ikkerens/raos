@@ -28,7 +28,7 @@ pub enum GrantType<OwnerId> {
     RefreshToken(RefreshGrant<OwnerId>),
 }
 
-impl<U: 'static, E: 'static> OAuthManager<U, E> {
+impl<U: 'static, E: 'static, Ex: 'static> OAuthManager<U, E, Ex> {
     /// Validate an incoming token request from a client.
     /// This function will validate the incoming request, and then return a [ValidatedTokenRequest]
     /// that contains the information needed to generate the token.
@@ -82,27 +82,19 @@ impl<U: 'static, E: 'static> OAuthManager<U, E> {
             return Err(OAuthValidationError::InvalidClient.into());
         }
 
-        // TODO Can this be prettier?
-        match req.client_secret {
-            Some(client_secret) => {
-                let secret_valid = self
-                    .client_provider
-                    .verify_client_secret(&client, &client_secret)
-                    .await
-                    .map_err(OAuthError::ProviderImplementationError)?;
-                if !secret_valid {
-                    return Err(OAuthValidationError::InvalidClientSecret.into());
-                }
+        if let Some(client_secret) = req.client_secret {
+            let secret_valid = self
+                .client_provider
+                .verify_client_secret(&client, &client_secret)
+                .await
+                .map_err(OAuthError::ProviderImplementationError)?;
+            if !secret_valid {
+                return Err(OAuthValidationError::InvalidClientSecret.into());
             }
-            None => {
-                if client.confidential
-                    || !matches!(req.grant_type, RequestedGrantType::AuthorizationCode { .. })
-                {
-                    return Err(
-                        OAuthValidationError::MissingRequiredParameter("client_secret").into()
-                    );
-                }
-            }
+        } else if client.confidential
+            || !matches!(req.grant_type, RequestedGrantType::AuthorizationCode { .. })
+        {
+            return Err(OAuthValidationError::MissingRequiredParameter("client_secret").into());
         }
 
         let grant_type = match req.grant_type {
@@ -135,8 +127,6 @@ impl<U: 'static, E: 'static> OAuthManager<U, E> {
                 else {
                     return Err(OAuthValidationError::InvalidAuthorizationCode.into());
                 };
-
-                // TODO Verify redirect_uri in token request?
 
                 if !grant.code_challenge.verify(&code_verifier) {
                     return Err(OAuthValidationError::InvalidCodeVerifier.into());

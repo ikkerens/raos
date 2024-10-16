@@ -3,7 +3,7 @@ use crate::{
     test::mock::{MockAuthorizationProvider, MockClientProvider, MockTokenProvider},
 };
 
-pub(crate) fn mocked_oauth_manager<F>(setup: F) -> OAuthManager<u32, ()>
+pub(crate) fn mocked_oauth_manager<F>(setup: F) -> OAuthManager<u32, (), ()>
 where
     F: FnOnce(&mut MockClientProvider, &mut MockAuthorizationProvider, &mut MockTokenProvider),
 {

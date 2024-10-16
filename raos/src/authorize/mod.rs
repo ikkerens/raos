@@ -13,7 +13,7 @@ mod request;
 mod response;
 mod validate;
 
-impl<U: 'static, E: 'static> OAuthManager<U, E> {
+impl<U: 'static, E: 'static, Ex: 'static> OAuthManager<U, E, Ex> {
     /// Handle an incoming authorization request from a client.
     /// This function will parse the incoming request, validate it, and then authorize the request,
     /// returning an [AuthorizationResponse] that contains the information for the client to use.
@@ -43,7 +43,7 @@ impl<U: 'static, E: 'static> OAuthManager<U, E> {
     /// "#);
     ///
     /// # tokio_test::block_on(async {
-    /// let result = manager.handle_authorization_request(req, owner_id_from_session()).await;
+    /// let result = manager.handle_authorization_request(req, owner_id_from_session(), None).await;
     /// assert!(result.is_ok());
     /// # });
     /// ```
@@ -51,10 +51,11 @@ impl<U: 'static, E: 'static> OAuthManager<U, E> {
         &self,
         req: impl FrontendRequest,
         owner_id: U,
+        extras: Option<Ex>,
     ) -> Result<AuthorizationResponse, OAuthError<E>> {
         // Take the raw frontend request parameters, and convert it into an AuthorizationRequest
         let request: AuthorizationRequest = (&req as &dyn FrontendRequest).try_into()?;
-        self.handle_authorization(request, owner_id).await
+        self.handle_authorization(request, owner_id, extras).await
     }
 
     /// Handle an incoming authorization request from a client.
@@ -96,7 +97,7 @@ impl<U: 'static, E: 'static> OAuthManager<U, E> {
     /// };
     ///
     /// # tokio_test::block_on(async {
-    /// let result = manager.handle_authorization(req, owner_id_from_session()).await;
+    /// let result = manager.handle_authorization(req, owner_id_from_session(), None).await;
     /// assert!(result.is_ok());
     /// # });
     /// ```
@@ -104,11 +105,10 @@ impl<U: 'static, E: 'static> OAuthManager<U, E> {
         &self,
         req: AuthorizationRequest,
         owner_id: U,
+        mut extras: Option<Ex>,
     ) -> Result<AuthorizationResponse, OAuthError<E>> {
         // Validate the input of the decoded request, following spec rules & provider validation
         let validated = self.validate_authorization_request(req).await?;
-
-        // TODO Add an AuthorizationProvider function to verify the resource owner's consent
 
         // Create a grant from the validated request
         let grant = Grant {
@@ -121,14 +121,27 @@ impl<U: 'static, E: 'static> OAuthManager<U, E> {
 
         let authorization_result = self
             .authorization_provider
-            .authorize_grant(&grant)
+            .authorize_grant(&grant, &mut extras)
             .await
             .map_err(OAuthError::ProviderImplementationError)?;
         match authorization_result {
             AuthorizationResult::Authorized => {} // Continue normally
-            // TODO Add a way to prompt the resource owner for authentication or consent
-            AuthorizationResult::RequireAuthentication => return Err(OAuthError::AccessDenied),
-            AuthorizationResult::RequireScopeConsent(_) => return Err(OAuthError::AccessDenied),
+            AuthorizationResult::RequireAuthentication => {
+                let response = self
+                    .authorization_provider
+                    .handle_required_authentication(&mut extras)
+                    .await
+                    .map_err(OAuthError::ProviderImplementationError)?;
+                return Err(OAuthError::RequiresResourceOwnerInteraction(response));
+            }
+            AuthorizationResult::RequireScopeConsent(scope) => {
+                let response = self
+                    .authorization_provider
+                    .handle_missing_scope_consent(scope, &mut extras)
+                    .await
+                    .map_err(OAuthError::ProviderImplementationError)?;
+                return Err(OAuthError::RequiresResourceOwnerInteraction(response));
+            }
             AuthorizationResult::Unauthorized => return Err(OAuthError::AccessDenied),
         }
 
