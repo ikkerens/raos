@@ -3,7 +3,7 @@ name: Formatting
 on: [push]
 
 jobs:
-  build:
+  formatting:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout git repository
