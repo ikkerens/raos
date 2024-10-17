@@ -15,7 +15,8 @@ use std::{
 static DOCTEST_CLIENT: LazyLock<Client> = LazyLock::new(|| Client {
     client_id: "CLIENT_ID".to_string(),
     redirect_uris: vec!["https://example.com".to_string()],
-    ..Default::default()
+    confidential: false,
+    supports_openid_connect: false,
 });
 
 /// Mock function to return an owner ID used in other tests

@@ -138,3 +138,158 @@ impl<U: 'static, E: 'static, Ex> OAuthManager<U, E, Ex> {
         })
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::test::DEFAULT_CLIENT_SECRET;
+    use crate::{
+        authorize::AuthorizationRequest,
+        common::{Client, OAuthError, OAuthValidationError},
+        test::TestEnvironment,
+    };
+
+    #[tokio::test]
+    async fn test_valid_url_pass() {
+        // Arrange
+        let mut test = TestEnvironment::new();
+        test.register_client(
+            Client {
+                redirect_uris: vec!["https://example.com/return".to_string()],
+                ..Default::default()
+            },
+            DEFAULT_CLIENT_SECRET.to_string(),
+        );
+        let manager = test.build();
+
+        let request = AuthorizationRequest {
+            redirect_uri: Some("https://example.com/return".to_string()),
+            ..Default::default()
+        };
+
+        // Act
+        let result = manager.validate_authorization_request(request).await;
+
+        // Assert
+        assert!(result.is_ok());
+        assert_eq!("https://example.com/return", result.unwrap().redirect_uri.to_string());
+    }
+
+    #[tokio::test]
+    async fn test_valid_url_with_query_pass() {
+        // The redirect URI MAY include an "application/x-www-form-urlencoded" formatted query component ([WHATWG.URL]).
+
+        // Arrange
+        let mut test = TestEnvironment::new();
+        test.register_client(
+            Client {
+                redirect_uris: vec!["https://example.com/return?some=value&other=value".to_string()],
+                ..Default::default()
+            },
+            DEFAULT_CLIENT_SECRET.to_string(),
+        );
+        let manager = test.build();
+
+        let request = AuthorizationRequest {
+            redirect_uri: Some("https://example.com/return?some=value&other=value".to_string()),
+            ..Default::default()
+        };
+
+        // Act
+        let result = manager.validate_authorization_request(request).await;
+
+        // Assert
+        assert!(result.is_ok());
+        assert_eq!(
+            "https://example.com/return?some=value&other=value",
+            result.unwrap().redirect_uri.to_string()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_invalid_url_fail() {
+        // The redirect URI MUST be an absolute URI as defined by [RFC3986] Section 4.3.
+
+        // Arrange
+        let mut test = TestEnvironment::new();
+        test.register_client(
+            Client { redirect_uris: vec!["not_a_url".to_string()], ..Default::default() },
+            DEFAULT_CLIENT_SECRET.to_string(),
+        );
+        let manager = test.build();
+
+        let request = AuthorizationRequest {
+            redirect_uri: Some("not_a_url".to_string()),
+            ..Default::default()
+        };
+
+        // Act
+        let result = manager.validate_authorization_request(request).await;
+
+        // Assert
+        assert!(result.is_err());
+        assert_eq!(
+            OAuthError::ValidationFailed(OAuthValidationError::InvalidRedirectUri),
+            result.unwrap_err()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_mismatching_url_fail() {
+        // Arrange
+        let mut test = TestEnvironment::new();
+        test.register_client(
+            Client {
+                redirect_uris: vec!["https://example.com/return".to_string()],
+                ..Default::default()
+            },
+            DEFAULT_CLIENT_SECRET.to_string(),
+        );
+        let manager = test.build();
+
+        let request = AuthorizationRequest {
+            redirect_uri: Some("https://example.com/other".to_string()),
+            ..Default::default()
+        };
+
+        // Act
+        let result = manager.validate_authorization_request(request).await;
+
+        // Assert
+        assert!(result.is_err());
+        assert_eq!(
+            OAuthError::ValidationFailed(OAuthValidationError::UnknownRedirectUri),
+            result.unwrap_err()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_url_with_fragment_fail() {
+        // The redirect URI MUST NOT include a fragment component.
+
+        // Arrange
+        let mut test = TestEnvironment::new();
+        test.register_client(
+            Client {
+                redirect_uris: vec!["https://example.com/return#fragment".to_string()],
+                ..Default::default()
+            },
+            DEFAULT_CLIENT_SECRET.to_string(),
+        );
+        let manager = test.build();
+
+        let request = AuthorizationRequest {
+            redirect_uri: Some("https://example.com/return#fragment".to_string()),
+            ..Default::default()
+        };
+
+        // Act
+        let result = manager.validate_authorization_request(request).await;
+
+        // Assert
+        assert!(result.is_err());
+        assert_eq!(
+            OAuthError::ValidationFailed(OAuthValidationError::InvalidRedirectUri),
+            result.unwrap_err()
+        );
+    }
+}

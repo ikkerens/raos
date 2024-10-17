@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 /// Represents a OAuth client.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct Client {
     /// The client id.
     pub client_id: String,
@@ -105,4 +105,61 @@ pub trait ClientProvider<Extras = ()>: 'static + Send + Sync {
         client: &Client,
         client_secret: &str,
     ) -> Result<bool, Self::Error>;
+}
+
+#[cfg(test)]
+mod test {
+    use crate::common::Client;
+
+    #[test]
+    fn test_client_is_valid() {
+        let client = Client {
+            client_id: "client_id".to_string(),
+            redirect_uris: vec!["http://localhost".to_string()],
+            confidential: false,
+            supports_openid_connect: false,
+        };
+
+        assert!(client.is_valid());
+    }
+
+    #[test]
+    fn test_client_with_multiple_redirect_uris_is_valid() {
+        // The authorization server MAY allow the client to register multiple redirect URIs.
+        let client = Client {
+            client_id: "client_id".to_string(),
+            redirect_uris: vec![
+                "http://localhost".to_string(),
+                "http://localhost:8080".to_string(),
+            ],
+            confidential: false,
+            supports_openid_connect: false,
+        };
+
+        assert!(client.is_valid());
+    }
+
+    #[test]
+    fn test_client_without_client_id_is_invalid() {
+        let client = Client {
+            client_id: "".to_string(),
+            redirect_uris: vec!["http://localhost".to_string()],
+            confidential: false,
+            supports_openid_connect: false,
+        };
+
+        assert!(!client.is_valid());
+    }
+
+    #[test]
+    fn test_client_without_redirect_uris_is_invalid() {
+        let client = Client {
+            client_id: "client_id".to_string(),
+            redirect_uris: vec![],
+            confidential: false,
+            supports_openid_connect: false,
+        };
+
+        assert!(!client.is_valid());
+    }
 }
