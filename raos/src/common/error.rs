@@ -6,7 +6,7 @@ use thiserror::Error;
 use crate::common::{FrontendRequestMethod, FrontendResponse, FrontendResponseExt};
 
 /// The collection of errors that can happen during OAuth validation, excluding provider errors.
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum OAuthValidationError {
     /// A required parameter was missing from the request.
     #[error("Missing required parameter: {0}")]
@@ -64,7 +64,7 @@ pub enum OAuthValidationError {
 }
 
 /// The error type used to return from all OAuth functions, which splits into validation and provider errors.
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum OAuthError<E> {
     /// The request was denied access by the authorization provider or resource owner.
     #[error("Access denied")]
@@ -82,7 +82,7 @@ pub enum OAuthError<E> {
 
 /// The public OAuth error types that can be returned to the client.
 /// These are the errors that are safe to show to the client, and do not expose any internal information.
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Serialize)]
 pub enum PublicOAuthError {
     /// The resource owner or authorization server denied the request.
     #[error("access_denied")]
@@ -177,7 +177,7 @@ impl<E> FrontendResponseExt for OAuthError<E> {
 
 /// The body of a public OAuth error response.
 /// This struct is serialized into JSON to be sent back to the client.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct PublicOAuthErrorBody {
     /// The error code to be sent back to the client.
     pub error: String,

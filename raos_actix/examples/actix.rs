@@ -12,7 +12,8 @@ async fn main() -> std::io::Result<()> {
                 client: Client {
                     client_id: "test".to_string(),
                     redirect_uris: vec!["https://oauthdebugger.com/debug".to_string()],
-                    ..Default::default()
+                    confidential: false,
+                    supports_openid_connect: false,
                 },
                 scopes: vec!["bla"],
                 secret: "bla".to_string(),
