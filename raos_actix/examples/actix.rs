@@ -1,7 +1,9 @@
 use actix_web::{get, post, web, App, HttpServer};
 
-use example_support::{DumbTokenProvider, VecClient, VecClientProvider};
-use raos::{common::Client, manager::OAuthManager, util::InMemoryAuthorizationProvider};
+use example_support::{
+    DumbTokenProvider, InMemoryAuthorizationProvider, VecClient, VecClientProvider,
+};
+use raos::{common::Client, manager::OAuthManager};
 use raos_actix::{ActixOAuthRequest, ActixOAuthResponse};
 
 #[actix_web::main]
