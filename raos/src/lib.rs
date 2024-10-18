@@ -25,5 +25,3 @@ pub mod manager;
 pub mod test;
 /// The token module contains the token provider trait, validation and flow.
 pub mod token;
-/// The util module contains utility functions.
-pub mod util;

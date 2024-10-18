@@ -7,7 +7,7 @@ repository = "https://github.com/ikkerens/raos"
 license = "MIT"
 
 [dependencies]
-raos = { path = "../raos", version = "=0.0.0-dev", features = ["memory-impls"] }
+raos = { path = "../raos", version = "=0.0.0-dev" }
 actix-web = { version = "4", default-features = false }
 futures = "0.3"
 url = "2"

@@ -17,9 +17,6 @@ url = { version = "2", features = ["serde"] }
 sha2 = "0.10"
 subtle = { version = "2", features = ["const-generics", "core_hint_black_box"] }
 
-rand = { version = ">=0.5", optional = true }
-dashmap = { version = "6", optional = true }
-
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 tokio-test = { version = "0.4" }
@@ -27,7 +24,6 @@ mockall = "0.13"
 
 [features]
 default = []
-memory-impls = ["rand", "dashmap"]
 _doctest = []
 
 [package.metadata.docs.rs]

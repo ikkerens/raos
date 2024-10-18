@@ -80,6 +80,41 @@ pub enum OAuthError<E> {
     ProviderImplementationError(E),
 }
 
+impl<E> From<OAuthValidationError> for OAuthError<E> {
+    fn from(value: OAuthValidationError) -> Self {
+        Self::ValidationFailed(value)
+    }
+}
+
+impl<E> FrontendResponseExt for OAuthError<E> {
+    fn into_frontend_response(self) -> FrontendResponse {
+        match self {
+            OAuthError::RequiresResourceOwnerInteraction(response) => response,
+            OAuthError::ValidationFailed(
+                OAuthValidationError::ClientDoesNotExist
+                | OAuthValidationError::MismatchedClientCredentials
+                | OAuthValidationError::NoRedirectUri
+                | OAuthValidationError::InvalidRedirectUri
+                | OAuthValidationError::UnknownRedirectUri,
+            ) => {
+                // If the request fails due to a missing, invalid, or mismatching redirect URI,
+                // or if the client identifier is missing or invalid,
+                // the authorization server SHOULD inform the resource owner of the error and
+                // MUST NOT automatically redirect the user agent to the invalid redirect URI.
+                // TODO Allow AS implementer to customize this response
+                let error: PublicOAuthError = self.into();
+                FrontendResponse::Error { error: error.into() }
+            }
+            _ => {
+                // TODO Some errors require a redirect back to the client, whereas some others require a message to the resource owner, this needs to be implemented
+                // TODO If this is an authorization error, make this a redirect and include state+iss
+                let error: PublicOAuthError = self.into();
+                FrontendResponse::Error { error: error.into() }
+            }
+        }
+    }
+}
+
 /// The public OAuth error types that can be returned to the client.
 /// These are the errors that are safe to show to the client, and do not expose any internal information.
 #[derive(Error, Debug, Serialize)]
@@ -124,12 +159,6 @@ impl<E> From<OAuthError<E>> for PublicOAuthError {
     }
 }
 
-impl<E> From<OAuthValidationError> for OAuthError<E> {
-    fn from(value: OAuthValidationError) -> Self {
-        Self::ValidationFailed(value)
-    }
-}
-
 impl PublicOAuthError {
     /// Get a human-readable description of the error.
     /// This is used to generate the error_description field in the OAuth response.
@@ -142,35 +171,6 @@ impl PublicOAuthError {
             Self::InvalidScope => "The requested scope is invalid, unknown, malformed, or exceeds the scope granted by the resource owner.",
             Self::InvalidClient => "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method).",
             Self::ServerError => "The authorization server encountered an unexpected condition that prevented it from fulfilling the request.",
-        }
-    }
-}
-
-impl<E> FrontendResponseExt for OAuthError<E> {
-    fn into_frontend_response(self) -> FrontendResponse {
-        match self {
-            OAuthError::RequiresResourceOwnerInteraction(response) => response,
-            OAuthError::ValidationFailed(
-                OAuthValidationError::ClientDoesNotExist
-                | OAuthValidationError::MismatchedClientCredentials
-                | OAuthValidationError::NoRedirectUri
-                | OAuthValidationError::InvalidRedirectUri
-                | OAuthValidationError::UnknownRedirectUri,
-            ) => {
-                // If the request fails due to a missing, invalid, or mismatching redirect URI,
-                // or if the client identifier is missing or invalid,
-                // the authorization server SHOULD inform the resource owner of the error and
-                // MUST NOT automatically redirect the user agent to the invalid redirect URI.
-                // TODO Allow AS implementer to customize this response
-                let error: PublicOAuthError = self.into();
-                FrontendResponse::Error { error: error.into() }
-            }
-            _ => {
-                // TODO Some errors require a redirect back to the client, whereas some others require a message to the resource owner, this needs to be implemented
-                // TODO If this is an authorization error, make this a redirect and include state+iss
-                let error: PublicOAuthError = self.into();
-                FrontendResponse::Error { error: error.into() }
-            }
         }
     }
 }

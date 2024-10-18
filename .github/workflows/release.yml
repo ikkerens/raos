@@ -23,6 +23,8 @@ jobs:
       - name: Set crate version
         run: find . -name 'Cargo.toml' -exec sed -i "s/0.0.0-dev/$(git describe --tags)/g" {} +
       - name: Publish raos main crate
-        run: (cd raos && cargo login ${{ secrets.CRATES_IO_TOKEN }} && cargo publish --allow-dirty) # Dirty because we modified Cargo.toml
+        working-directory: raos
+        run: cargo publish --allow-dirty
       - name: Publish raos_actix crate
-        run: (cd raos_actix && cargo login ${{ secrets.CRATES_IO_TOKEN }} && cargo publish --allow-dirty) # Dirty because we modified Cargo.toml
+        working-directory: raos_actix
+        run: cargo publish --allow-dirty
