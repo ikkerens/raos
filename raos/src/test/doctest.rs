@@ -1,8 +1,5 @@
 use crate::{
-    authorize::{
-        AuthorizationProvider,
-        GrantAuthorizationResult,
-    },
+    authorize::{AuthorizationProvider, GrantAuthorizationResult},
     common::{Client, ClientProvider, CodeChallenge, Grant},
     manager::OAuthManager,
     token::{GrantType, RefreshGrant, Token, TokenProvider},

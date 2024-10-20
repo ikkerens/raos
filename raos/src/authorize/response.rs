@@ -1,8 +1,4 @@
-use serde::{
-    ser::SerializeStruct,
-    Serialize,
-    Serializer,
-};
+use serde::{ser::SerializeStruct, Serialize, Serializer};
 use url::Url;
 
 use crate::common::{FrontendResponse, FrontendResponseExt, PublicOAuthError};
