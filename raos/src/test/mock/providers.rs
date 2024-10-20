@@ -1,5 +1,5 @@
 use crate::{
-    authorize::{AuthorizationProvider, AuthorizationResult},
+    authorize::{AuthorizationProvider, GrantAuthorizationResult},
     common::{Client, ClientProvider, FrontendResponse, Grant},
     token::{GrantType, RefreshGrant, Token, TokenProvider},
 };
@@ -14,7 +14,7 @@ mock! {
         type OwnerId = u32;
         type Extras = ();
         type Error = ();
-        async fn authorize_grant(&self, grant: &Grant<u32>, extras: &mut Option<()>) -> Result<AuthorizationResult, ()>;
+        async fn authorize_grant(&self, grant: &Grant<u32>, extras: &mut Option<()>) -> Result<GrantAuthorizationResult, ()>;
         async fn generate_code_for_grant(&self, grant: Grant<u32>) -> Result<String, ()>;
         async fn exchange_code_for_grant(&self, code: String) -> Result<Option<Grant<u32>>, ()>;
         async fn handle_required_authentication(&self, extras: &mut Option<()>) -> Result<FrontendResponse, ()>;

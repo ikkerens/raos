@@ -7,6 +7,7 @@ use crate::{
     common::{FrontendRequest, Grant, OAuthError},
     manager::OAuthManager,
 };
+use std::mem::take;
 
 mod provider;
 mod request;
@@ -105,18 +106,48 @@ impl<U: 'static, E: 'static, Ex: 'static> OAuthManager<U, E, Ex> {
         &self,
         req: AuthorizationRequest,
         owner_id: U,
-        mut extras: Option<Ex>,
+        extras: Option<Ex>,
     ) -> Result<AuthorizationResponse, OAuthError<E>> {
-        // Validate the input of the decoded request, following spec rules & provider validation
-        let validated = self.validate_authorization_request(req).await?;
+        // Validate the input of the decoded request
+        // We use the try operator to bubble up the response into the error response
+        let mut validated = self.validate_authorization_request(req).await?;
 
+        // Handle the authorization request
+        // This error we handle manually, as we need to return a response to the client by redirecting
+        let result =
+            match self.handle_authorization_internal(&mut validated, owner_id, extras).await {
+                // Success path
+                Ok(code) => Ok(code),
+                // If we require a resource owner interaction, also bubble up normally
+                Err(e @ OAuthError::RequiresResourceOwnerInteraction(_)) => return Err(e),
+                // Any errors that don't pop up during early validation, we redirect back to the client
+                Err(e) => Err(e.into()),
+            };
+
+        // Send back the response
+        Ok(AuthorizationResponse {
+            result,
+            state: validated.state,
+            iss: self.config.authorization_server_identifier.clone(),
+            redirect_uri: validated.redirect_uri,
+        })
+    }
+
+    async fn handle_authorization_internal(
+        &self,
+        validated: &mut ValidatedAuthorizationRequest,
+        owner_id: U,
+        mut extras: Option<Ex>,
+    ) -> Result<String, OAuthError<E>> {
         // Create a grant from the validated request
         let grant = Grant {
             owner_id,
-            client_id: validated.client.client_id,
-            scope: validated.scopes,
+            // Redirect uri is needed in some error responses, so don't take it
             redirect_uri: validated.redirect_uri.clone(),
-            code_challenge: validated.code_challenge,
+            // The remaining values are taken from the validated request
+            client_id: take(&mut validated.client.client_id),
+            scope: take(&mut validated.scopes),
+            code_challenge: validated.code_challenge.take(),
         };
 
         let authorization_result = self
@@ -125,8 +156,8 @@ impl<U: 'static, E: 'static, Ex: 'static> OAuthManager<U, E, Ex> {
             .await
             .map_err(OAuthError::ProviderImplementationError)?;
         match authorization_result {
-            AuthorizationResult::Authorized => {} // Continue normally
-            AuthorizationResult::RequireAuthentication => {
+            GrantAuthorizationResult::Authorized => {} // Continue normally
+            GrantAuthorizationResult::RequireAuthentication => {
                 let response = self
                     .authorization_provider
                     .handle_required_authentication(&mut extras)
@@ -134,7 +165,7 @@ impl<U: 'static, E: 'static, Ex: 'static> OAuthManager<U, E, Ex> {
                     .map_err(OAuthError::ProviderImplementationError)?;
                 return Err(OAuthError::RequiresResourceOwnerInteraction(response));
             }
-            AuthorizationResult::RequireScopeConsent(scope) => {
+            GrantAuthorizationResult::RequireScopeConsent(scope) => {
                 let response = self
                     .authorization_provider
                     .handle_missing_scope_consent(scope, &mut extras)
@@ -142,7 +173,7 @@ impl<U: 'static, E: 'static, Ex: 'static> OAuthManager<U, E, Ex> {
                     .map_err(OAuthError::ProviderImplementationError)?;
                 return Err(OAuthError::RequiresResourceOwnerInteraction(response));
             }
-            AuthorizationResult::Unauthorized => return Err(OAuthError::AccessDenied),
+            GrantAuthorizationResult::Unauthorized => return Err(OAuthError::AccessDenied),
         }
 
         // After validation, exchange our grant for an authorization code that can later be exchanged
@@ -153,11 +184,6 @@ impl<U: 'static, E: 'static, Ex: 'static> OAuthManager<U, E, Ex> {
             .await
             .map_err(OAuthError::ProviderImplementationError)?;
 
-        Ok(AuthorizationResponse {
-            code,
-            state: validated.state,
-            iss: self.config.authorization_server_identifier.clone(),
-            redirect_uri: validated.redirect_uri,
-        })
+        Ok(code)
     }
 }

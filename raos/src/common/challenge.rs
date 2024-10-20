@@ -23,7 +23,13 @@ pub enum CodeChallenge {
 }
 
 impl CodeChallenge {
-    pub(crate) fn verify(&self, verifier: &str) -> bool {
+    pub(crate) fn take(&mut self) -> Self {
+        std::mem::replace(self, Self::None)
+    }
+
+    /// Verify that the given verifier matches the code challenge.
+    /// This function will return true if the verifier matches the code challenge, and false otherwise.
+    pub fn verify(&self, verifier: &str) -> bool {
         match self {
             Self::None => true,
             Self::Plain { code_challenge } => {

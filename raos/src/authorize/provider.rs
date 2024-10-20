@@ -21,18 +21,18 @@ pub trait AuthorizationProvider: 'static + Send + Sync {
     /// Authorize a grant.
     ///
     /// # Implementation notes
-    /// This function should return an [AuthorizationResult] that describes the result of the authorization.
-    /// If the result is [AuthorizationResult::Authorized], the authorization flow will continue and a code will be generated and returned.
-    /// If the result is [AuthorizationResult::RequireAuthentication], the client should be prompted to ask the resource owner to authenticate.
-    /// If the result is [AuthorizationResult::RequireScopeConsent], the client should be prompted to ask the resource owner for consent.
-    /// If the result is [AuthorizationResult::Unauthorized], the authorization flow will be stopped and an error will be returned to the client.
+    /// This function should return an [GrantAuthorizationResult] that describes the result of the authorization.
+    /// - If the result is [Authorized](GrantAuthorizationResult::Authorized), the authorization flow will continue and a code will be generated and returned.
+    /// - If the result is [RequireAuthentication](GrantAuthorizationResult::RequireAuthentication), the client should be prompted to ask the resource owner to authenticate.
+    /// - If the result is [RequireScopeConsent](GrantAuthorizationResult::RequireScopeConsent), the client should be prompted to ask the resource owner for consent.
+    /// - If the result is [Unauthorized](GrantAuthorizationResult::Unauthorized), the authorization flow will be stopped and an error will be returned to the client.
     ///
     /// # Arguments
     /// * `grant` - The grant to authorize.
     /// * `extras` - An optional parameter that can be passed down from the top-level authorize function, this can contain things like request information. This is useful to add context like session info to the authorization provider.
     ///
     /// # Returns
-    /// An [AuthorizationResult] that describes the result of the authorization.
+    /// An [GrantAuthorizationResult] that describes the result of the authorization.
     ///
     /// # Errors
     /// If the grant is invalid or the authorization provider fails to authorize the grant, through whatever error.
@@ -40,7 +40,7 @@ pub trait AuthorizationProvider: 'static + Send + Sync {
         &self,
         grant: &Grant<Self::OwnerId>,
         extras: &mut Option<Self::Extras>,
-    ) -> Result<AuthorizationResult, Self::Error>;
+    ) -> Result<GrantAuthorizationResult, Self::Error>;
 
     /// Generate an authorization code for a grant.
     ///
@@ -49,6 +49,8 @@ pub trait AuthorizationProvider: 'static + Send + Sync {
     /// to a grant through [exchange_code_for_grant](AuthorizationProvider::exchange_code_for_grant)
     /// which is part of this same trait.
     /// You should not use any readable or predictable values for the authorization code, such as JWT.
+    /// The authorization code MUST expire shortly after it is issued to mitigate the risk of leaks.
+    /// A maximum authorization code lifetime of 10 minutes is RECOMMENDED.
     ///
     /// # Arguments
     /// * `grant` - The grant to authorize.
@@ -136,7 +138,7 @@ pub trait AuthorizationProvider: 'static + Send + Sync {
 }
 
 /// The result of an authorization request.
-pub enum AuthorizationResult {
+pub enum GrantAuthorizationResult {
     /// The grant was authorized, the flow will continue to return an authorization code.
     Authorized,
     /// The resource owner needs to authenticate before the grant can be authorized.
