@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use raos::{
-    async_trait, authorize::AuthorizationProvider, authorize::AuthorizationResult, common::Grant,
+    async_trait, authorize::AuthorizationProvider, authorize::GrantAuthorizationResult,
+    common::Grant,
 };
 use tokio::sync::Mutex;
 
@@ -21,8 +22,8 @@ impl AuthorizationProvider for InMemoryAuthorizationProvider {
         &self,
         _grant: &Grant<Self::OwnerId>,
         _extras: &mut Option<Self::Extras>,
-    ) -> Result<AuthorizationResult, Self::Error> {
-        Ok(AuthorizationResult::Authorized)
+    ) -> Result<GrantAuthorizationResult, Self::Error> {
+        Ok(GrantAuthorizationResult::Authorized)
     }
 
     async fn generate_code_for_grant(

@@ -1,6 +1,5 @@
-use crate::authorize::AuthorizationResult;
 use crate::{
-    authorize::AuthorizationProvider,
+    authorize::{AuthorizationProvider, GrantAuthorizationResult},
     common::{Client, ClientProvider, CodeChallenge, Grant},
     manager::OAuthManager,
     token::{GrantType, RefreshGrant, Token, TokenProvider},
@@ -76,8 +75,8 @@ impl AuthorizationProvider for DocTestAuthorizationProvider {
         &self,
         _grant: &Grant<Self::OwnerId>,
         _extras: &mut Option<Self::Extras>,
-    ) -> Result<AuthorizationResult, Self::Error> {
-        Ok(AuthorizationResult::Authorized)
+    ) -> Result<GrantAuthorizationResult, Self::Error> {
+        Ok(GrantAuthorizationResult::Authorized)
     }
 
     async fn generate_code_for_grant(
