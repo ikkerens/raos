@@ -11,12 +11,19 @@
 use std::{collections::HashMap, convert::Infallible};
 
 use actix_web::{
-    body::BoxBody, dev::Payload, http::Method, web, FromRequest, HttpRequest, HttpResponse,
-    Responder,
+    body::BoxBody,
+    dev::Payload,
+    http::{
+        header::{CacheControl, CacheDirective},
+        Method,
+    },
+    web, FromRequest, HttpRequest, HttpResponse, Responder,
 };
 use futures::{future::LocalBoxFuture, FutureExt};
 
-use raos::common::{FrontendRequest, FrontendRequestMethod, FrontendResponse, FrontendResponseExt};
+use raos::common::frontend::{
+    FrontendRequest, FrontendRequestMethod, FrontendResponse, FrontendResponseExt,
+};
 
 /// Actix request wrapper for RAOS.
 /// This implements [FrontendRequest] for actix requests, also implements the trait required to function as an extractor via [FromRequest].
@@ -98,8 +105,12 @@ impl Responder for ActixOAuthResponse {
 
     fn respond_to(self, _: &HttpRequest) -> HttpResponse<Self::Body> {
         match self.req {
-            FrontendResponse::Success { json } => HttpResponse::Ok().json(json),
-            FrontendResponse::Error { error } => HttpResponse::BadRequest().json(error),
+            FrontendResponse::Success { json } => HttpResponse::Ok()
+                .insert_header(CacheControl(vec![CacheDirective::NoStore]))
+                .json(json),
+            FrontendResponse::Error { error } => HttpResponse::BadRequest()
+                .insert_header(CacheControl(vec![CacheDirective::NoStore]))
+                .json(error),
             FrontendResponse::Redirect { location } => {
                 HttpResponse::Found().append_header(("Location", location.to_string())).finish()
             }

@@ -8,3 +8,10 @@ pub mod doctest;
 pub mod mock;
 #[cfg(test)]
 mod test_environment;
+
+// TODO More unit tests for REQUIRED
+// TODO More unit tests for SHALL
+// TODO More unit tests for SHOULD
+
+// TODO Add resource request support
+// TODO Prepare MUST requirements for resource requests

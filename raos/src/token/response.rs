@@ -1,9 +1,9 @@
 use serde::Serialize;
 
-use crate::common::{FrontendResponse, FrontendResponseExt};
+use crate::common::frontend::{FrontendResponse, FrontendResponseExt};
 
 /// The response to a token request.
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct TokenResponse {
     /// The access token.
     pub access_token: String,

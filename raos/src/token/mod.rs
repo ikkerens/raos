@@ -1,17 +1,19 @@
 pub use provider::*;
 pub use request::*;
 pub use response::*;
-use std::time::Instant;
 pub use validate::*;
 
 use crate::{
-    common::{FrontendRequest, OAuthError},
+    common::frontend::{FrontendRequest, OAuthError},
     manager::OAuthManager,
 };
+use std::time::Instant;
 
 mod provider;
 mod request;
 mod response;
+#[cfg(test)]
+mod test;
 mod validate;
 
 impl<U: 'static, E: 'static, Ex: 'static> OAuthManager<U, E, Ex> {
@@ -42,7 +44,7 @@ impl<U: 'static, E: 'static, Ex: 'static> OAuthManager<U, E, Ex> {
     ///     POST /token HTTP/1.1
     ///     Content-Type: application/x-www-form-urlencoded
     ///
-    ///     grant_type=authorization_code&code=AUTHORIZATION_CODE&code_verifier=CODE_CHALLENGE&redirect_uri=https://example.com&client_id=CLIENT_ID&client_secret=CLIENT_SECRET
+    ///     grant_type=authorization_code&code=AUTHORIZATION_CODE&code_verifier=CODE_CHALLENGE&client_id=CLIENT_ID&client_secret=CLIENT_SECRET
     /// "#);
     ///
     /// # tokio_test::block_on(async {
@@ -55,7 +57,7 @@ impl<U: 'static, E: 'static, Ex: 'static> OAuthManager<U, E, Ex> {
         req: impl FrontendRequest,
     ) -> Result<TokenResponse, OAuthError<E>> {
         // Take the raw frontend request parameters, and convert it into an AuthorizationRequest
-        let request: TokenRequest = (&req as &dyn FrontendRequest).try_into()?;
+        let request = TokenRequest::try_from(&req as &dyn FrontendRequest)?;
         self.handle_token(request).await
     }
 
@@ -92,6 +94,7 @@ impl<U: 'static, E: 'static, Ex: 'static> OAuthManager<U, E, Ex> {
     ///         code: "AUTHORIZATION_CODE".to_string(),
     ///         code_verifier: "CODE_CHALLENGE".to_string(),
     ///     },
+    ///     redirect_uri: None, // OAuth 2.0 compatibility, not required in OAuth v2.1
     ///     scope: None
     /// };
     ///

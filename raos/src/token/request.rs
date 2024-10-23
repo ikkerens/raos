@@ -1,8 +1,13 @@
 use base64::{prelude::BASE64_STANDARD, Engine};
 
-use crate::common::{FrontendRequest, FrontendRequestMethod, OAuthValidationError};
+use crate::common::{
+    frontend::{FrontendRequest, FrontendRequestMethod, OAuthValidationError},
+    syntax::{ValidateSyntax, CLIENT_ID_SYNTAX},
+    util::NoneIfEmpty,
+};
 
 /// A parsed request to exchange an authorization code, refresh code or client credentials for an access token.
+#[derive(Debug)]
 pub struct TokenRequest {
     /// The client ID.
     pub client_id: String,
@@ -10,11 +15,14 @@ pub struct TokenRequest {
     pub client_secret: Option<String>,
     /// The type of grant requested by the client.
     pub grant_type: RequestedGrantType,
+    /// The redirect_uri that is repeated in the token request, for compatibility with OAuth 2.0.
+    pub redirect_uri: Option<String>,
     /// The requested scope, used when refreshing a token using the refresh token grant type.
     pub scope: Option<Vec<String>>,
 }
 
 /// The type of grant requested by the client.
+#[derive(Debug)]
 pub enum RequestedGrantType {
     /// The client is requesting an access token using client credentials.
     ClientCredentials,
@@ -43,10 +51,13 @@ impl TryFrom<&dyn FrontendRequest> for TokenRequest {
             });
         }
 
+        // We should treat empty values as if they were omitted from the request
+        let body_param = |key| request.body_param(key).none_if_empty();
+
         let header_credentials = get_credentials_from_header(request)?;
 
         let (mut client_id, mut client_secret) = header_credentials.unzip();
-        if let Some(body_client_id) = request.body_param("client_id") {
+        if let Some(body_client_id) = body_param("client_id") {
             if let Some(header_client_id) = client_id {
                 if body_client_id != header_client_id {
                     return Err(OAuthValidationError::MismatchedClientCredentials);
@@ -55,7 +66,7 @@ impl TryFrom<&dyn FrontendRequest> for TokenRequest {
 
             client_id = Some(body_client_id);
         };
-        if let Some(body_client_secret) = request.body_param("client_secret") {
+        if let Some(body_client_secret) = body_param("client_secret") {
             if client_secret.is_none() {
                 client_secret = Some(body_client_secret);
             }
@@ -64,19 +75,20 @@ impl TryFrom<&dyn FrontendRequest> for TokenRequest {
         let Some(client_id) = client_id else {
             return Err(OAuthValidationError::MissingRequiredParameter("client_id"));
         };
+        client_id.validate_syntax("client_id", &CLIENT_ID_SYNTAX)?;
 
-        let Some(grant_type_str) = request.body_param("grant_type") else {
+        let Some(grant_type_str) = body_param("grant_type") else {
             return Err(OAuthValidationError::MissingRequiredParameter("grant_type"));
         };
 
         let grant_type = match grant_type_str.as_str() {
             "client_credentials" => RequestedGrantType::ClientCredentials,
             "authorization_code" => {
-                let code = match request.body_param("code") {
+                let code = match body_param("code") {
                     Some(code) => code,
                     None => return Err(OAuthValidationError::MissingRequiredParameter("code")),
                 };
-                let code_verifier = match request.body_param("code_verifier") {
+                let code_verifier = match body_param("code_verifier") {
                     Some(code_verifier) => code_verifier,
                     None => {
                         return Err(OAuthValidationError::MissingRequiredParameter("code_verifier"))
@@ -85,7 +97,7 @@ impl TryFrom<&dyn FrontendRequest> for TokenRequest {
                 RequestedGrantType::AuthorizationCode { code, code_verifier }
             }
             "refresh_token" => {
-                let refresh_token = match request.body_param("refresh_token") {
+                let refresh_token = match body_param("refresh_token") {
                     Some(refresh_token) => refresh_token,
                     None => {
                         return Err(OAuthValidationError::MissingRequiredParameter("refresh_token"))
@@ -94,16 +106,21 @@ impl TryFrom<&dyn FrontendRequest> for TokenRequest {
                 RequestedGrantType::RefreshToken { refresh_token }
             }
             _ => {
-                return Err(OAuthValidationError::InvalidParameterValue(
-                    "grant_type",
-                    grant_type_str,
-                ))
+                return Err(OAuthValidationError::InvalidGrantType {
+                    requested: grant_type_str.to_string(),
+                });
             }
         };
 
-        let scope = request.body_param("scope").map(|s| s.split(" ").map(str::to_string).collect());
+        let scope = body_param("scope").map(|s| s.split(" ").map(str::to_string).collect());
 
-        Ok(TokenRequest { client_id, client_secret, grant_type, scope })
+        Ok(TokenRequest {
+            client_id,
+            client_secret,
+            grant_type,
+            scope,
+            redirect_uri: body_param("redirect_uri"),
+        })
     }
 }
 

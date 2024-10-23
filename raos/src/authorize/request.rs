@@ -1,7 +1,12 @@
-use crate::common::{CodeChallenge, FrontendRequest, FrontendRequestMethod, OAuthValidationError};
+use crate::common::{
+    frontend::{FrontendRequest, FrontendRequestMethod, OAuthValidationError},
+    model::CodeChallenge,
+    syntax::{ValidateSyntax, CLIENT_ID_SYNTAX, STATE_SYNTAX},
+    util::NoneIfEmpty,
+};
 
 /// The response type expected in an authorization request.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ResponseType {
     /// The client is requesting an authorization code.
     Code,
@@ -10,6 +15,7 @@ pub enum ResponseType {
 /// A parsed authorization request from a client.
 /// This struct contains all the information needed to authorize a client's request.
 /// This is produced by parsing a [FrontendRequest] from a client.
+#[derive(Debug)]
 pub struct AuthorizationRequest {
     /// The response type expected in the request.
     pub response_type: ResponseType,
@@ -17,8 +23,6 @@ pub struct AuthorizationRequest {
     pub client_id: String,
     /// The code challenge and method used in the request.
     pub code_challenge: CodeChallenge,
-    /// Whether the request has an OpenID nonce.
-    pub has_openid_nonce: bool,
     /// The redirect URI the client expects to be redirected to.
     pub redirect_uri: Option<String>,
     /// The scope of the request, space separated
@@ -43,9 +47,9 @@ impl TryFrom<&dyn FrontendRequest> for AuthorizationRequest {
 
         // Helper function to get a parameter from either the query or body if it's a POST request
         let param = |key| {
-            request.query_param(key).or_else(|| {
+            request.query_param(key).none_if_empty().or_else(|| {
                 if let FrontendRequestMethod::POST = request.request_method() {
-                    request.body_param(key)
+                    request.body_param(key).none_if_empty()
                 } else {
                     None
                 }
@@ -60,18 +64,21 @@ impl TryFrom<&dyn FrontendRequest> for AuthorizationRequest {
         let Some(client_id) = param("client_id") else {
             return Err(OAuthValidationError::MissingRequiredParameter("client_id"));
         };
+        client_id.validate_syntax("client_id", &CLIENT_ID_SYNTAX)?;
         let code_challenge =
             (param("code_challenge"), param("code_challenge_method")).try_into()?;
+
+        let state = param("state");
+        state.validate_syntax("state", &STATE_SYNTAX)?;
 
         // Return the authorization request
         Ok(Self {
             response_type,
             client_id,
             code_challenge,
-            has_openid_nonce: param("nonce").is_some(),
+            state,
             redirect_uri: param("redirect_uri"),
             scope: param("scope"),
-            state: param("state"),
         })
     }
 }

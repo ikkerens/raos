@@ -1,7 +1,7 @@
 use crate::{
     authorize::AuthorizationProvider,
-    common::ClientProvider,
-    manager::{OAuthConfig, OAuthManager},
+    common::model::ClientProvider,
+    manager::{CodeChallengeRequirement, OAuthConfig, OAuthManager},
     token::TokenProvider,
 };
 
@@ -81,17 +81,6 @@ impl<C, A> OAuthManagerBuilder<C, A, NeedsTokenProvider> {
 }
 
 impl<C, A, T> OAuthManagerBuilder<C, A, T> {
-    /// Calling require_code_challenge will change the code_challenge requirement from RECOMMENDED to REQUIRED, even for confidential clients.
-    /// If this function is not called, the code challenge is not enforced if all the following criteria are met:
-    /// - The client is marked as confidential. (Client.confidential is true)
-    /// - The client correctly implements the OpenID Connect nonce. (Client.supports_openid_connect is true AND the request has a nonce)
-    ///
-    /// See more [link](https://www.ietf.org/archive/id/draft-ietf-oauth-v2-1-11.html#section-7.5.2)
-    pub fn require_code_challenge(mut self) -> Self {
-        self.config.require_code_challenge = true;
-        self
-    }
-
     /// Calling disallow_plain_code_challenge will disallow the use of plain code challenges.
     /// If this function is called, the code challenge must be a S256 challenge.
     /// This is a security measure to prevent code injection attacks.
@@ -105,6 +94,21 @@ impl<C, A, T> OAuthManagerBuilder<C, A, T> {
     /// This is an optional setting.
     pub fn set_authorization_server_identifier(mut self, identifier: String) -> Self {
         self.config.authorization_server_identifier = Some(identifier);
+        self
+    }
+
+    /// Set the code challenge requirement to always require a code challenge.
+    /// By default, it is only required for public clients.
+    pub fn code_challenge_always_required(mut self) -> Self {
+        self.config.require_code_challenge = CodeChallengeRequirement::Always;
+        self
+    }
+
+    /// Set the code challenge requirement to never require a code challenge.
+    /// This is intended for use-cases where the implementer takes responsibility for client authentication, like with a secured network or trusted source.
+    /// By default, it is only required for public clients.
+    pub fn code_challenge_never_required(mut self) -> Self {
+        self.config.require_code_challenge = CodeChallengeRequirement::Never;
         self
     }
 }

@@ -1,6 +1,6 @@
 use url::Url;
 
-use crate::common::{OAuthError, PublicOAuthErrorBody};
+use crate::common::frontend::{OAuthError, PublicOAuthErrorBody};
 
 /// The FrontendResponse enum is used to send responses back to the client.
 /// This enum is used to send JSON responses, error responses, and redirects.

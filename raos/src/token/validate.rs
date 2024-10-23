@@ -1,11 +1,14 @@
-use crate::token::RefreshGrant;
 use crate::{
-    common::{Client, OAuthError, OAuthValidationError},
+    common::{
+        frontend::{OAuthError, OAuthValidationError},
+        model::Client,
+    },
     manager::OAuthManager,
-    token::{RequestedGrantType, TokenRequest},
+    token::{RefreshGrant, RequestedGrantType, TokenRequest},
 };
 
 /// A validated token request.
+#[derive(Debug)]
 pub struct ValidatedTokenRequest<OwnerId> {
     /// The client that is requesting the token.
     pub client: Client,
@@ -14,6 +17,7 @@ pub struct ValidatedTokenRequest<OwnerId> {
 }
 
 /// The type of grant requested by the client.
+#[derive(Debug, PartialEq)]
 pub enum GrantType<OwnerId> {
     /// The client is requesting an access token using client credentials.
     ClientCredentials,
@@ -59,6 +63,7 @@ impl<U: 'static, E: 'static, Ex: 'static> OAuthManager<U, E, Ex> {
     ///         code: "AUTHORIZATION_CODE".to_string(),
     ///         code_verifier: "CODE_CHALLENGE".to_string(),
     ///     },
+    ///     redirect_uri: None, // OAuth 2.0 compatibility, not required in OAuth v2.1
     ///     scope: None
     /// };
     ///
@@ -97,22 +102,40 @@ impl<U: 'static, E: 'static, Ex: 'static> OAuthManager<U, E, Ex> {
             return Err(OAuthValidationError::MissingRequiredParameter("client_secret").into());
         }
 
+        if let Some(ref redirect_uri) = req.redirect_uri {
+            if !client.has_redirect_uri(redirect_uri) {
+                return Err(OAuthValidationError::UnknownRedirectUri.into());
+            }
+        }
+
         let grant_type = match req.grant_type {
-            RequestedGrantType::ClientCredentials => GrantType::ClientCredentials,
+            RequestedGrantType::ClientCredentials => {
+                if !client.confidential {
+                    return Err(OAuthValidationError::ClientNotAllowedToUseGrantType {
+                        requested: "client_credentials",
+                    }
+                    .into());
+                }
+                GrantType::ClientCredentials
+            }
             RequestedGrantType::RefreshToken { refresh_token } => {
                 let Some(refresh_grant) = self
                     .token_provider
-                    .exchange_refresh_token(&client, refresh_token)
+                    .exchange_refresh_token(refresh_token)
                     .await
                     .map_err(OAuthError::ProviderImplementationError)?
                 else {
                     return Err(OAuthValidationError::InvalidRefreshToken.into());
                 };
 
+                if client.client_id != refresh_grant.client_id {
+                    return Err(OAuthValidationError::RefreshTokenClientMismatch.into());
+                }
+
                 if let Some(scope) = &req.scope {
-                    if scope.iter().filter(|scope| refresh_grant.scope.contains(scope)).count() > 0
+                    if scope.iter().filter(|scope| !refresh_grant.scope.contains(scope)).count() > 0
                     {
-                        return Err(OAuthValidationError::ScopeNotAllowed.into());
+                        return Err(OAuthValidationError::ScopeNotConsented.into());
                     }
                 }
 
@@ -130,6 +153,14 @@ impl<U: 'static, E: 'static, Ex: 'static> OAuthManager<U, E, Ex> {
 
                 if !grant.code_challenge.verify(&code_verifier) {
                     return Err(OAuthValidationError::InvalidCodeVerifier.into());
+                }
+                if grant.client_id != client.client_id {
+                    return Err(OAuthValidationError::AuthorizationCodeClientMismatch.into());
+                }
+                if let Some(redirect_uri) = req.redirect_uri {
+                    if grant.redirect_uri.to_string() != redirect_uri {
+                        return Err(OAuthValidationError::InvalidRedirectUri.into());
+                    }
                 }
 
                 GrantType::AuthorizationCode { resource_owner: grant.owner_id, scope: grant.scope }

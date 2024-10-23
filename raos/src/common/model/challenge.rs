@@ -5,7 +5,7 @@ use subtle::ConstantTimeEq;
 
 /// The code challenge used in PKCE.
 /// This enum represents the different types of code challenges that can be used in PKCE.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum CodeChallenge {
     /// No code challenge is used.
@@ -31,7 +31,7 @@ impl CodeChallenge {
     /// This function will return true if the verifier matches the code challenge, and false otherwise.
     pub fn verify(&self, verifier: &str) -> bool {
         match self {
-            Self::None => true,
+            Self::None => false, // If there is no code challenge, verification should always fail
             Self::Plain { code_challenge } => {
                 verifier.as_bytes().ct_eq(code_challenge.as_bytes()).into()
             }

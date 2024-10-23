@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use async_trait::async_trait;
 
-use crate::{common::Client, token::GrantType};
+use crate::{common::model::Client, token::GrantType};
 
 /// Token provider trait.
 /// This is one of the traits that has to be implemented by the end user, for the oauth manager to work.
@@ -44,7 +44,6 @@ pub trait TokenProvider: 'static + Send + Sync {
     /// # Implementation notes
     ///
     /// # Arguments
-    /// * `client` - The client to exchange the refresh token for.
     /// * `refresh_token` - The refresh token to exchange.
     ///
     /// # Returns
@@ -55,7 +54,6 @@ pub trait TokenProvider: 'static + Send + Sync {
     /// This error will later be returned through [OAuthError::ProviderImplementationError](crate::common::OAuthError::ProviderImplementationError).
     async fn exchange_refresh_token(
         &self,
-        client: &Client,
         refresh_token: String,
     ) -> Result<Option<RefreshGrant<Self::OwnerId>>, Self::Error>;
 }
@@ -71,7 +69,10 @@ pub struct Token {
 }
 
 /// A refresh grant passed to the [TokenProvider] when exchanging a refresh token.
+#[derive(Debug, PartialEq)]
 pub struct RefreshGrant<OwnerId> {
+    /// The client that the request token was issued to.
+    pub client_id: String,
     /// The resource owner that authorized the refresh token.
     pub resource_owner: OwnerId,
     /// The requested scope.

@@ -3,7 +3,7 @@ use crate::{
     builder::{
         NeedsAuthorizationProvider, NeedsClientProvider, NeedsTokenProvider, OAuthManagerBuilder,
     },
-    common::ClientProvider,
+    common::model::{Client, ClientProvider},
     token::TokenProvider,
 };
 
@@ -31,7 +31,25 @@ impl OAuthManager<(), (), ()> {
 
 #[derive(Default)]
 pub(crate) struct OAuthConfig {
-    pub(crate) require_code_challenge: bool,
+    pub(crate) require_code_challenge: CodeChallengeRequirement,
     pub(crate) disallow_plain_code_challenge: bool,
     pub(crate) authorization_server_identifier: Option<String>,
+}
+
+#[derive(Default)]
+pub(crate) enum CodeChallengeRequirement {
+    Always,
+    #[default]
+    OnlyForPublicClients,
+    Never,
+}
+
+impl CodeChallengeRequirement {
+    pub(crate) fn require_code_challenge(&self, client: &Client) -> bool {
+        match self {
+            CodeChallengeRequirement::Always => true,
+            CodeChallengeRequirement::OnlyForPublicClients => !client.confidential,
+            CodeChallengeRequirement::Never => false,
+        }
+    }
 }

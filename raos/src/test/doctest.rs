@@ -1,6 +1,6 @@
 use crate::{
     authorize::{AuthorizationProvider, GrantAuthorizationResult},
-    common::{Client, ClientProvider, CodeChallenge, Grant},
+    common::model::{Client, ClientProvider, CodeChallenge, Grant},
     manager::OAuthManager,
     token::{GrantType, RefreshGrant, Token, TokenProvider},
 };
@@ -15,7 +15,6 @@ static DOCTEST_CLIENT: LazyLock<Client> = LazyLock::new(|| Client {
     client_id: "CLIENT_ID".to_string(),
     redirect_uris: vec!["https://example.com".to_string()],
     confidential: false,
-    supports_openid_connect: false,
 });
 
 /// Mock function to return an owner ID used in other tests
@@ -49,9 +48,9 @@ impl ClientProvider for DocTestClientProvider {
     async fn allow_client_scopes(
         &self,
         _client: &Client,
-        scopes: Vec<String>,
+        requested_scopes: Vec<String>,
     ) -> Result<Vec<String>, Self::Error> {
-        Ok(scopes)
+        Ok(requested_scopes)
     }
 
     async fn verify_client_secret(
@@ -73,10 +72,11 @@ impl AuthorizationProvider for DocTestAuthorizationProvider {
 
     async fn authorize_grant(
         &self,
-        _grant: &Grant<Self::OwnerId>,
+        _client: &Client,
+        _scopes: &[String],
         _extras: &mut Option<Self::Extras>,
-    ) -> Result<GrantAuthorizationResult, Self::Error> {
-        Ok(GrantAuthorizationResult::Authorized)
+    ) -> Result<GrantAuthorizationResult<Self::OwnerId>, Self::Error> {
+        Ok(GrantAuthorizationResult::Authorized(1))
     }
 
     async fn generate_code_for_grant(
@@ -127,11 +127,14 @@ impl TokenProvider for DocTestTokenProvider {
 
     async fn exchange_refresh_token(
         &self,
-        _client: &Client,
         _refresh_token: String,
     ) -> Result<Option<RefreshGrant<Self::OwnerId>>, Self::Error> {
         if _refresh_token == "REFRESH_TOKEN" {
-            Ok(Some(RefreshGrant { resource_owner: 1, scope: vec!["SCOPE".to_string()] }))
+            Ok(Some(RefreshGrant {
+                client_id: "CLIENT_ID".to_string(),
+                resource_owner: 1,
+                scope: vec!["SCOPE".to_string()],
+            }))
         } else {
             Ok(None)
         }

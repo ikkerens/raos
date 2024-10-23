@@ -1,13 +1,6 @@
-pub use challenge::*;
-pub use client::*;
-pub use error::*;
-pub use grant::*;
-pub use request::*;
-pub use response::*;
-
-mod challenge;
-mod client;
-mod error;
-mod grant;
-mod request;
-mod response;
+/// Common data structures and functions used to communicate with a frontend
+pub mod frontend;
+/// Common data structures and functions used across the OAuth spec
+pub mod model;
+pub(crate) mod syntax;
+pub(crate) mod util;

@@ -1,8 +1,10 @@
 use url::Url;
 
+use crate::common::frontend::{OAuthError, OAuthValidationError};
+use crate::common::model::Client;
+use crate::common::model::CodeChallenge;
 use crate::{
     authorize::{AuthorizationRequest, ResponseType},
-    common::{Client, CodeChallenge, OAuthError, OAuthValidationError},
     manager::OAuthManager,
 };
 
@@ -43,9 +45,9 @@ impl<U: 'static, E: 'static, Ex> OAuthManager<U, E, Ex> {
     /// # Example
     /// ```
     /// # use raos::{
-    /// #     test::doctest::oauth_manager_from_application_state,
-    /// #     authorize::{AuthorizationRequest, ResponseType},
-    /// #     common::CodeChallenge
+    /// # authorize::{AuthorizationRequest, ResponseType},
+    /// #   common::model::CodeChallenge,
+    /// #   test::doctest::oauth_manager_from_application_state
     /// # };
     ///
     /// let manager = oauth_manager_from_application_state();
@@ -53,7 +55,6 @@ impl<U: 'static, E: 'static, Ex> OAuthManager<U, E, Ex> {
     ///     response_type: ResponseType::Code,
     ///     client_id: "CLIENT_ID".to_string(),
     ///     code_challenge: CodeChallenge::Plain { code_challenge: "CODE_CHALLENGE".to_string() },
-    ///     has_openid_nonce: false,
     ///     redirect_uri: Some("https://example.com".to_string()),
     ///     scope: Some("SCOPE".to_string()),
     ///     state: Some("STATE".to_string()),
@@ -80,10 +81,8 @@ impl<U: 'static, E: 'static, Ex> OAuthManager<U, E, Ex> {
             return Err(OAuthValidationError::InvalidClient.into());
         }
 
-        let can_skip_challenge =
-            client.confidential && client.supports_openid_connect && req.has_openid_nonce;
         if matches!(req.code_challenge, CodeChallenge::None)
-            && (self.config.require_code_challenge && !can_skip_challenge)
+            && self.config.require_code_challenge.require_code_challenge(&client)
         {
             return Err(OAuthValidationError::CodeChallengeRequired.into());
         }
@@ -94,7 +93,7 @@ impl<U: 'static, E: 'static, Ex> OAuthManager<U, E, Ex> {
         }
 
         let redirect_uri = if let Some(redirect_uri) = req.redirect_uri {
-            if client.redirect_uris.contains(&redirect_uri) {
+            if client.has_redirect_uri(&redirect_uri) {
                 redirect_uri
             } else {
                 return Err(OAuthValidationError::UnknownRedirectUri.into());
@@ -129,167 +128,12 @@ impl<U: 'static, E: 'static, Ex> OAuthManager<U, E, Ex> {
         }
 
         Ok(ValidatedAuthorizationRequest {
-            response_type: req.response_type,
             client,
-            code_challenge: req.code_challenge,
             redirect_uri,
             scopes,
+            response_type: req.response_type,
+            code_challenge: req.code_challenge,
             state: req.state,
         })
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use crate::test::DEFAULT_CLIENT_SECRET;
-    use crate::{
-        authorize::AuthorizationRequest,
-        common::{Client, OAuthError, OAuthValidationError},
-        test::TestEnvironment,
-    };
-
-    #[tokio::test]
-    async fn test_valid_url_pass() {
-        // Arrange
-        let mut test = TestEnvironment::new();
-        test.register_client(
-            Client {
-                redirect_uris: vec!["https://example.com/return".to_string()],
-                ..Default::default()
-            },
-            DEFAULT_CLIENT_SECRET.to_string(),
-        );
-        let manager = test.build();
-
-        let request = AuthorizationRequest {
-            redirect_uri: Some("https://example.com/return".to_string()),
-            ..Default::default()
-        };
-
-        // Act
-        let result = manager.validate_authorization_request(request).await;
-
-        // Assert
-        assert!(result.is_ok());
-        assert_eq!("https://example.com/return", result.unwrap().redirect_uri.to_string());
-    }
-
-    #[tokio::test]
-    async fn test_valid_url_with_query_pass() {
-        // The redirect URI MAY include an "application/x-www-form-urlencoded" formatted query component ([WHATWG.URL]).
-
-        // Arrange
-        let mut test = TestEnvironment::new();
-        test.register_client(
-            Client {
-                redirect_uris: vec!["https://example.com/return?some=value&other=value".to_string()],
-                ..Default::default()
-            },
-            DEFAULT_CLIENT_SECRET.to_string(),
-        );
-        let manager = test.build();
-
-        let request = AuthorizationRequest {
-            redirect_uri: Some("https://example.com/return?some=value&other=value".to_string()),
-            ..Default::default()
-        };
-
-        // Act
-        let result = manager.validate_authorization_request(request).await;
-
-        // Assert
-        assert!(result.is_ok());
-        assert_eq!(
-            "https://example.com/return?some=value&other=value",
-            result.unwrap().redirect_uri.to_string()
-        );
-    }
-
-    #[tokio::test]
-    async fn test_invalid_url_fail() {
-        // The redirect URI MUST be an absolute URI as defined by [RFC3986] Section 4.3.
-
-        // Arrange
-        let mut test = TestEnvironment::new();
-        test.register_client(
-            Client { redirect_uris: vec!["not_a_url".to_string()], ..Default::default() },
-            DEFAULT_CLIENT_SECRET.to_string(),
-        );
-        let manager = test.build();
-
-        let request = AuthorizationRequest {
-            redirect_uri: Some("not_a_url".to_string()),
-            ..Default::default()
-        };
-
-        // Act
-        let result = manager.validate_authorization_request(request).await;
-
-        // Assert
-        assert!(result.is_err());
-        assert_eq!(
-            OAuthError::ValidationFailed(OAuthValidationError::InvalidRedirectUri),
-            result.unwrap_err()
-        );
-    }
-
-    #[tokio::test]
-    async fn test_mismatching_url_fail() {
-        // Arrange
-        let mut test = TestEnvironment::new();
-        test.register_client(
-            Client {
-                redirect_uris: vec!["https://example.com/return".to_string()],
-                ..Default::default()
-            },
-            DEFAULT_CLIENT_SECRET.to_string(),
-        );
-        let manager = test.build();
-
-        let request = AuthorizationRequest {
-            redirect_uri: Some("https://example.com/other".to_string()),
-            ..Default::default()
-        };
-
-        // Act
-        let result = manager.validate_authorization_request(request).await;
-
-        // Assert
-        assert!(result.is_err());
-        assert_eq!(
-            OAuthError::ValidationFailed(OAuthValidationError::UnknownRedirectUri),
-            result.unwrap_err()
-        );
-    }
-
-    #[tokio::test]
-    async fn test_url_with_fragment_fail() {
-        // The redirect URI MUST NOT include a fragment component.
-
-        // Arrange
-        let mut test = TestEnvironment::new();
-        test.register_client(
-            Client {
-                redirect_uris: vec!["https://example.com/return#fragment".to_string()],
-                ..Default::default()
-            },
-            DEFAULT_CLIENT_SECRET.to_string(),
-        );
-        let manager = test.build();
-
-        let request = AuthorizationRequest {
-            redirect_uri: Some("https://example.com/return#fragment".to_string()),
-            ..Default::default()
-        };
-
-        // Act
-        let result = manager.validate_authorization_request(request).await;
-
-        // Assert
-        assert!(result.is_err());
-        assert_eq!(
-            OAuthError::ValidationFailed(OAuthValidationError::InvalidRedirectUri),
-            result.unwrap_err()
-        );
     }
 }

@@ -1,4 +1,4 @@
-use crate::common::{FrontendRequest, FrontendRequestMethod};
+use crate::common::frontend::{FrontendRequest, FrontendRequestMethod};
 use std::collections::HashMap;
 
 /// A mocked frontend request for testing purposes.
@@ -89,14 +89,14 @@ fn test_request_from_raw_http() {
      "#,
     );
 
-    assert_eq!(request.request_method(), FrontendRequestMethod::GET);
-    assert_eq!(request.query_param("client_id"), Some("1234".to_string()));
-    assert_eq!(request.query_param("response_type"), Some("code".to_string()));
-    assert_eq!(request.header_param("Host"), Some("localhost:8080".to_string()));
+    assert_eq!(FrontendRequestMethod::GET, request.request_method());
+    assert_eq!(Some("1234".to_string()), request.query_param("client_id"));
+    assert_eq!(Some("code".to_string()), request.query_param("response_type"));
+    assert_eq!(Some("localhost:8080".to_string()), request.header_param("Host"));
     assert_eq!(
-        request.header_param("Content-Type"),
-        Some("application/x-www-form-urlencoded".to_string())
+        Some("application/x-www-form-urlencoded".to_string()),
+        request.header_param("Content-Type")
     );
-    assert_eq!(request.body_param("code_challenge"), Some("5678".to_string()));
-    assert_eq!(request.body_param("code_challenge_method"), Some("S256".to_string()));
+    assert_eq!(Some("5678".to_string()), request.body_param("code_challenge"));
+    assert_eq!(Some("S256".to_string()), request.body_param("code_challenge_method"));
 }
