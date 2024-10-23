@@ -10,6 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: Release
     steps:
+      # Prepare crate
+      - name: Set crate version
+        run: find . -name 'Cargo.toml' -exec sed -i "s/0.0.0-dev/$(git describe --tags)/g" {} +
+
       # Basic tests to ensure code quality before release
       - name: Checkout git repository
         uses: actions/checkout@v2
@@ -20,12 +24,14 @@ jobs:
       - name: Test code correctness
         run: cargo clippy --all -- -D warnings
 
-      # Prepare crate
-      - name: Set crate version
-        run: find . -name 'Cargo.toml' -exec sed -i "s/0.0.0-dev/$(git describe --tags)/g" {} +
+      # Publish crate
       - name: Publish raos main crate
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         working-directory: raos
         run: cargo publish --allow-dirty
       - name: Publish raos_actix crate
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         working-directory: raos_actix
         run: cargo publish --allow-dirty
