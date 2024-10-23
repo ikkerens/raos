@@ -106,7 +106,9 @@ impl TryFrom<&dyn FrontendRequest> for TokenRequest {
                 RequestedGrantType::RefreshToken { refresh_token }
             }
             _ => {
-                return Err(OAuthValidationError::InvalidGrantType {requested: grant_type_str.to_string()});
+                return Err(OAuthValidationError::InvalidGrantType {
+                    requested: grant_type_str.to_string(),
+                });
             }
         };
 
