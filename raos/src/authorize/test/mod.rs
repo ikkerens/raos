@@ -11,6 +11,7 @@ use crate::{
 };
 use mockall::predicate::always;
 
+mod grant_rejects;
 mod request;
 mod response;
 mod validate;
@@ -44,6 +45,7 @@ async fn test_authorize_full_flow() {
     let response = result.unwrap();
     assert_eq!(Ok(DEFAULT_AUTHORIZATION_CODE.to_string()), response.result);
     assert_eq!(DEFAULT_REDIRECT_URI, response.redirect_uri.to_string());
+    assert_eq!(Some("STATE".to_string()), response.state);
 }
 
 #[tokio::test]

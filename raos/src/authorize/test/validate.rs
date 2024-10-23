@@ -106,7 +106,7 @@ async fn test_mismatching_url_fail() {
     let result = manager.validate_authorization_request(request).await;
 
     // Assert
-    assert!(result.is_err());
+    assert!(result.is_err(), "result is not Err, result is {:?}", result);
     assert_eq!(
         OAuthError::ValidationFailed(OAuthValidationError::UnknownRedirectUri),
         result.unwrap_err()
@@ -137,7 +137,7 @@ async fn test_url_with_fragment_fail() {
     let result = manager.validate_authorization_request(request).await;
 
     // Assert
-    assert!(result.is_err());
+    assert!(result.is_err(), "result is not Err, result is {:?}", result);
     assert_eq!(
         OAuthError::ValidationFailed(OAuthValidationError::InvalidRedirectUri),
         result.unwrap_err()
@@ -168,7 +168,7 @@ async fn test_client_with_multiple_redirect_uris_should_specify_redirect_uri() {
     let result = manager.validate_authorization_request(request).await;
 
     // Assert
-    assert!(result.is_err());
+    assert!(result.is_err(), "result is not Err, result is {:?}", result);
     assert_eq!(
         OAuthError::ValidationFailed(OAuthValidationError::NoRedirectUri),
         result.unwrap_err()

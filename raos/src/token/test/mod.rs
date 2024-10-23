@@ -36,6 +36,39 @@ async fn test_token_full_flow() {
 }
 
 #[tokio::test]
+async fn test_token_full_flow_with_s256() {
+    // Arrange
+    let mut test = TestEnvironment::new();
+    test.default_client();
+    test.register_grant(
+        DEFAULT_AUTHORIZATION_CODE.to_string(),
+        Grant {
+            code_challenge: CodeChallenge::S256 {
+                code_challenge: "jwf_hjmVE1z34-qKjaH_PDNofyjfJAMpPx_nLP0CRiI".to_string(),
+            },
+            ..Default::default()
+        },
+    );
+    let manager = test.build();
+
+    let request = TokenRequest {
+        grant_type: RequestedGrantType::AuthorizationCode {
+            code: DEFAULT_AUTHORIZATION_CODE.to_string(),
+            code_verifier: "h2NzVb9nyqWVp7fbg8LGjW8lbzSuZjrZBE7HHGYitcd".to_string(),
+        },
+        ..Default::default()
+    };
+
+    // Act
+    let result = manager.handle_token(request).await;
+
+    // Assert
+    assert!(result.is_ok(), "result is not Ok, result is {:?}", result);
+    let result = result.unwrap();
+    assert_eq!(DEFAULT_TOKEN, result.access_token);
+}
+
+#[tokio::test]
 async fn test_authorization_code_invalid() {
     // The authorization server MUST verify that the authorization code is valid.
 

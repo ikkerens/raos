@@ -25,6 +25,12 @@ pub enum OAuthValidationError {
         /// The actual request method.
         actual: FrontendRequestMethod,
     },
+    /// The requested grant type is invalid.
+    #[error("Invalid grant type: {requested}")]
+    InvalidGrantType {
+        /// The requested grant type
+        requested: String,
+    },
     /// The client (id) does not exist.
     #[error("Client (id) does not exist")]
     ClientDoesNotExist,
@@ -35,7 +41,8 @@ pub enum OAuthValidationError {
     #[error("The client returned from the provider is invalid.")]
     InvalidClient,
     /// The authenticated client is not authorized to use this authorization grant type.
-    #[error("The authenticated client is not authorized to use this authorization grant type.")]
+    #[error("The authenticated client is not authorized to use this authorization grant type: {requested}"
+    )]
     ClientNotAllowedToUseGrantType {
         /// The requested grant type
         requested: &'static str,
@@ -129,6 +136,9 @@ pub enum PublicOAuthError {
     /// Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method).
     #[error("invalid_client")]
     InvalidClient,
+    /// The requested grant type is not supported by the authorization server.
+    #[error("unsupported_grant_type")]
+    UnsupportedGrantType,
     /// The authenticated client is not authorized to use this authorization grant type.
     #[error("unauthorized_client")]
     UnauthorizedClient,
@@ -153,11 +163,14 @@ impl<E> From<OAuthError<E>> for PublicOAuthError {
             OAuthError::ValidationFailed(
                 OAuthValidationError::ClientNotAllowedToUseGrantType { .. },
             ) => Self::UnauthorizedClient,
+            OAuthError::ValidationFailed(OAuthValidationError::InvalidGrantType { .. }) => {
+                Self::UnsupportedGrantType
+            }
             OAuthError::ValidationFailed(_) => Self::InvalidRequest,
             OAuthError::ProviderImplementationError(_) => Self::ServerError,
             OAuthError::RequiresResourceOwnerInteraction(_) => {
                 // This should never happen, as this error is only used internally.
-                Self::AccessDenied
+                Self::ServerError
             }
         }
     }
@@ -174,6 +187,7 @@ impl PublicOAuthError {
             Self::InvalidRequest => "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed.",
             Self::InvalidScope => "The requested scope is invalid, unknown, malformed, or exceeds the scope granted by the resource owner.",
             Self::InvalidClient => "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method).",
+            Self::UnsupportedGrantType => "The authorization grant type is not supported by the authorization server.",
             Self::UnauthorizedClient => "The authenticated client is not authorized to use this authorization grant type.",
             Self::ServerError => "The authorization server encountered an unexpected condition that prevented it from fulfilling the request.",
         }

@@ -106,10 +106,7 @@ impl TryFrom<&dyn FrontendRequest> for TokenRequest {
                 RequestedGrantType::RefreshToken { refresh_token }
             }
             _ => {
-                return Err(OAuthValidationError::InvalidParameterValue(
-                    "grant_type",
-                    grant_type_str,
-                ))
+                return Err(OAuthValidationError::InvalidGrantType {requested: grant_type_str.to_string()});
             }
         };
 
