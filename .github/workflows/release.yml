@@ -13,8 +13,8 @@ jobs:
       - name: Checkout git repository
         uses: actions/checkout@v2
       - name: Run unit tests
-        run: cargo test --all --verbose
-      - name: Test code formattinggit
+        run: cargo test --all --all-features
+      - name: Test code formatting
         run: cargo fmt --all -- --check
       - name: Test code correctness
         run: cargo clippy --all -- -D warnings
