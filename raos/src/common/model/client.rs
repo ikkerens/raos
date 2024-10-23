@@ -1,3 +1,4 @@
+use crate::common::syntax::CLIENT_ID_SYNTAX;
 use async_trait::async_trait;
 
 /// Represents a OAuth client.
@@ -11,25 +12,27 @@ pub struct Client {
     ///
     /// Confidential clients MUST authenticate with the authorization server, for example by using client credentials.
     pub confidential: bool,
-    /// Whether this client is allowed to use openid connect features
-    ///
-    /// While this library does not have any inherent openid connect support, this option can be set
-    /// to allow skipping the code challenge requirement for openid connect clients, as long as they include
-    /// a nonce in the request.
-    pub supports_openid_connect: bool,
 }
 
 impl Client {
     /// Checks if the client is valid.
     /// A client is valid if it has a non-empty client id and at least one redirect uri.
     pub fn is_valid(&self) -> bool {
-        if self.client_id.is_empty() {
+        if self.client_id.trim().is_empty() {
+            return false;
+        }
+        if !CLIENT_ID_SYNTAX.is_match(&self.client_id) {
             return false;
         }
         if self.redirect_uris.is_empty() {
             return false;
         }
         true
+    }
+
+    /// Checks if the client has a specific redirect uri whitelisted.
+    pub fn has_redirect_uri(&self, redirect_uri: &str) -> bool {
+        self.redirect_uris.contains(&redirect_uri.to_string())
     }
 }
 
@@ -60,16 +63,18 @@ pub trait ClientProvider<Extras = ()>: 'static + Send + Sync {
     /// This error will later be returned through [OAuthError::ProviderImplementationError](crate::common::OAuthError::ProviderImplementationError).
     async fn get_client_by_id(&self, client_id: &str) -> Result<Option<Client>, Self::Error>;
 
-    /// Check if a client is allowed to use a set of scopes.
+    /// Check if a client is allowed to use a set of scopes, and insert any default scopes.
     ///
     /// # Implementation notes
     /// Ownership of the scopes is transferred to the client provider, so a good practise is to
     /// convert it into an iterator and filter out the scopes the client is not allowed to use,
     /// returning the Vec returned with collect.
+    /// Any default scopes should be added to the returned Vec.
+    /// An empty vec returned here will result in a [OAuthValidationError::NoScopesProvided](crate::common::OAuthValidationError::NoScopesProvided) error.
     ///
     /// # Arguments
     /// * `client` - The client to check the scopes for.
-    /// * `scopes` - The scopes to check.
+    /// * `requested_scopes` - The scopes to requested by the client.
     ///
     /// # Returns
     /// A [Vec] containing the scopes that were in the original requested scopes, with all the scopes that the client is not allowed to use removed.
@@ -80,7 +85,7 @@ pub trait ClientProvider<Extras = ()>: 'static + Send + Sync {
     async fn allow_client_scopes(
         &self,
         client: &Client,
-        scopes: Vec<String>,
+        requested_scopes: Vec<String>,
     ) -> Result<Vec<String>, Self::Error>;
 
     /// Verify a client secret.
@@ -109,7 +114,7 @@ pub trait ClientProvider<Extras = ()>: 'static + Send + Sync {
 
 #[cfg(test)]
 mod test {
-    use crate::common::Client;
+    use crate::common::model::Client;
 
     #[test]
     fn test_client_is_valid() {
@@ -117,7 +122,6 @@ mod test {
             client_id: "client_id".to_string(),
             redirect_uris: vec!["http://localhost".to_string()],
             confidential: false,
-            supports_openid_connect: false,
         };
 
         assert!(client.is_valid());
@@ -133,7 +137,6 @@ mod test {
                 "http://localhost:8080".to_string(),
             ],
             confidential: false,
-            supports_openid_connect: false,
         };
 
         assert!(client.is_valid());
@@ -145,7 +148,17 @@ mod test {
             client_id: "".to_string(),
             redirect_uris: vec!["http://localhost".to_string()],
             confidential: false,
-            supports_openid_connect: false,
+        };
+
+        assert!(!client.is_valid());
+    }
+
+    #[test]
+    fn test_client_with_blank_client_id_is_invalid() {
+        let client = Client {
+            client_id: " \t\n".to_string(),
+            redirect_uris: vec!["http://localhost".to_string()],
+            confidential: false,
         };
 
         assert!(!client.is_valid());
@@ -157,7 +170,6 @@ mod test {
             client_id: "client_id".to_string(),
             redirect_uris: vec![],
             confidential: false,
-            supports_openid_connect: false,
         };
 
         assert!(!client.is_valid());

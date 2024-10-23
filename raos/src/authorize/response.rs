@@ -1,7 +1,6 @@
+use crate::common::frontend::{FrontendResponse, FrontendResponseExt, PublicOAuthError};
 use serde::{ser::SerializeStruct, Serialize, Serializer};
 use url::Url;
-
-use crate::common::{FrontendResponse, FrontendResponseExt, PublicOAuthError};
 
 /// The response to an authorization request.
 /// This struct contains the authorization result, optional state and optional server identifier to be sent back to the client.
@@ -10,7 +9,7 @@ use crate::common::{FrontendResponse, FrontendResponseExt, PublicOAuthError};
 /// This struct implements the [FrontendResponseExt] trait to allow it to be converted into a
 /// [FrontendResponse] that can be sent back to the client.
 /// This struct is serialized into a query string to be appended to the redirect URI.
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct AuthorizationResponse {
     /// The authorization result to be sent back to the client.
     /// This will either contain a code, or an error to send back to the client.

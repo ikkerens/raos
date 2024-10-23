@@ -1,6 +1,9 @@
 use crate::{
     authorize::{AuthorizationProvider, GrantAuthorizationResult},
-    common::{Client, ClientProvider, FrontendResponse, Grant},
+    common::{
+        frontend::FrontendResponse,
+        model::{Client, ClientProvider, Grant},
+    },
     token::{GrantType, RefreshGrant, Token, TokenProvider},
 };
 use async_trait::async_trait;
@@ -14,7 +17,7 @@ mock! {
         type OwnerId = u32;
         type Extras = ();
         type Error = ();
-        async fn authorize_grant(&self, grant: &Grant<u32>, extras: &mut Option<()>) -> Result<GrantAuthorizationResult, ()>;
+        async fn authorize_grant(&self, _client: &Client, _scopes: &[String], _extras: &mut Option<()>) -> Result<GrantAuthorizationResult<u32>, ()>;
         async fn generate_code_for_grant(&self, grant: Grant<u32>) -> Result<String, ()>;
         async fn exchange_code_for_grant(&self, code: String) -> Result<Option<Grant<u32>>, ()>;
         async fn handle_required_authentication(&self, extras: &mut Option<()>) -> Result<FrontendResponse, ()>;
@@ -29,7 +32,7 @@ mock! {
     impl ClientProvider for ClientProvider {
         type Error = ();
         async fn get_client_by_id(&self, client_id: &str) -> Result<Option<Client>, ()>;
-        async fn allow_client_scopes(&self, client: &Client, scopes: Vec<String>) -> Result<Vec<String>, ()>;
+        async fn allow_client_scopes(&self, client: &Client, requested_scopes: Vec<String>) -> Result<Vec<String>, ()>;
         async fn verify_client_secret(&self, client: &Client, client_secret: &str) -> Result<bool, ()>;
     }
 }
@@ -42,6 +45,6 @@ mock! {
         type OwnerId = u32;
         type Error = ();
         async fn token(&self, client: &Client, grant: GrantType<u32>) -> Result<Token, ()>;
-        async fn exchange_refresh_token(&self, client: &Client, refresh_token: String) -> Result<Option<RefreshGrant<u32>>, ()>;
+        async fn exchange_refresh_token(&self, refresh_token: String) -> Result<Option<RefreshGrant<u32>>, ()>;
     }
 }

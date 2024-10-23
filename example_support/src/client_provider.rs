@@ -1,6 +1,6 @@
 use raos::{
     async_trait,
-    common::{Client, ClientProvider},
+    common::model::{Client, ClientProvider},
 };
 
 pub struct VecClient {
@@ -28,10 +28,10 @@ impl ClientProvider for VecClientProvider {
     async fn allow_client_scopes(
         &self,
         client: &Client,
-        scopes: Vec<String>,
+        requested_scopes: Vec<String>,
     ) -> Result<Vec<String>, Self::Error> {
         let Some(client) = self.get_vec_client_by_id(&client.client_id) else { return Err(()) };
-        Ok(scopes.into_iter().filter(|s| client.scopes.contains(&s.as_str())).collect())
+        Ok(requested_scopes.into_iter().filter(|s| client.scopes.contains(&s.as_str())).collect())
     }
 
     async fn verify_client_secret(

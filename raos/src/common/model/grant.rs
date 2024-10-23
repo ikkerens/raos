@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::common::CodeChallenge;
+use crate::common::model::CodeChallenge;
 
 /// A grant is used to send information to and from the providers for the library to work.
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Grant<OwnerId> {
     /// The OAuth resource owner's id.
     pub owner_id: OwnerId,

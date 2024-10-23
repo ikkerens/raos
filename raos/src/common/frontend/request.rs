@@ -6,7 +6,7 @@ pub enum FrontendRequestMethod {
     GET,
     /// HTTP POST
     POST,
-    /// Other request methods, e.g. PUT, DELETE, etc, used for logging and error purposes.
+    /// Other request methods, e.g. PUT, DELETE, etc., used for logging and error purposes.
     OtherUnsupported(String),
 }
 

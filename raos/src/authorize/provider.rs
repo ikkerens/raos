@@ -1,6 +1,8 @@
+use crate::common::{
+    frontend::{FrontendResponse, FrontendResponseExt, OAuthError},
+    model::{Client, Grant},
+};
 use async_trait::async_trait;
-
-use crate::common::{FrontendResponse, FrontendResponseExt, Grant, OAuthError};
 
 /// Authorization provider trait
 /// This is one of the traits that has to be implemented by the end user, for the oauth manager to work.
@@ -12,7 +14,7 @@ pub trait AuthorizationProvider: 'static + Send + Sync {
     /// This type will need to match the OwnerId used in [TokenProvider](crate::token::TokenProvider).
     type OwnerId;
     /// This is the type of the extras that can be passed down from the top-level authorization functions.
-    /// This can contain things like request information to [authorize_grant](AuthorizationProvider::authorize_grant).
+    /// This can contain things like request information or owner id to [authorize_grant](AuthorizationProvider::authorize_grant).
     type Extras;
     /// This is the error type that can be returned by the authorization provider implementing this trait.
     /// This type will need to match the Error used in [TokenProvider](crate::token::TokenProvider) and [ClientProvider](crate::common::ClientProvider).
@@ -28,8 +30,9 @@ pub trait AuthorizationProvider: 'static + Send + Sync {
     /// - If the result is [Unauthorized](GrantAuthorizationResult::Unauthorized), the authorization flow will be stopped and an error will be returned to the client.
     ///
     /// # Arguments
-    /// * `grant` - The grant to authorize.
-    /// * `extras` - An optional parameter that can be passed down from the top-level authorize function, this can contain things like request information. This is useful to add context like session info to the authorization provider.
+    /// * `client` - The client that is requesting the grant.
+    /// * `scopes` - The scopes that the client is requesting.
+    /// * `extras` - An optional parameter that can be passed down from the top-level authorize function, this can contain things like request information or owner id. This is useful to add context like session info to the authorization provider.
     ///
     /// # Returns
     /// An [GrantAuthorizationResult] that describes the result of the authorization.
@@ -38,9 +41,10 @@ pub trait AuthorizationProvider: 'static + Send + Sync {
     /// If the grant is invalid or the authorization provider fails to authorize the grant, through whatever error.
     async fn authorize_grant(
         &self,
-        grant: &Grant<Self::OwnerId>,
+        client: &Client,
+        scopes: &[String],
         extras: &mut Option<Self::Extras>,
-    ) -> Result<GrantAuthorizationResult, Self::Error>;
+    ) -> Result<GrantAuthorizationResult<Self::OwnerId>, Self::Error>;
 
     /// Generate an authorization code for a grant.
     ///
@@ -138,9 +142,9 @@ pub trait AuthorizationProvider: 'static + Send + Sync {
 }
 
 /// The result of an authorization request.
-pub enum GrantAuthorizationResult {
+pub enum GrantAuthorizationResult<U> {
     /// The grant was authorized, the flow will continue to return an authorization code.
-    Authorized,
+    Authorized(U),
     /// The resource owner needs to authenticate before the grant can be authorized.
     RequireAuthentication,
     /// The resource owner needs to consent to the requested scopes before the grant can be authorized.

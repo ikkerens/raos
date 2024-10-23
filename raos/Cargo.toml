@@ -16,6 +16,7 @@ base64 = "0.22"
 url = { version = "2", features = ["serde"] }
 sha2 = "0.10"
 subtle = { version = "2", features = ["const-generics", "core_hint_black_box"] }
+regex = "1"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

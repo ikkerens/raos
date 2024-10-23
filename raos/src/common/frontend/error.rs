@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use serde::Serialize;
 use thiserror::Error;
 
-use crate::common::{FrontendRequestMethod, FrontendResponse, FrontendResponseExt};
+use crate::common::frontend::{FrontendRequestMethod, FrontendResponse, FrontendResponseExt};
 
 /// The collection of errors that can happen during OAuth validation, excluding provider errors.
 #[derive(Error, Debug, PartialEq)]
@@ -11,6 +11,9 @@ pub enum OAuthValidationError {
     /// A required parameter was missing from the request.
     #[error("Missing required parameter: {0}")]
     MissingRequiredParameter(&'static str),
+    /// The request contained an invalid parameter syntax.
+    #[error("Invalid parameter syntax for parameter {0}, should match regex {1}")]
+    InvalidParameterSyntax(&'static str, String),
     /// An invalid parameter was passed to the request, that does not fit other error types.
     #[error("Invalid parameter value for parameter {0}: {1}")]
     InvalidParameterValue(&'static str, String),
@@ -31,6 +34,12 @@ pub enum OAuthValidationError {
     /// The client returned from the provider is invalid.
     #[error("The client returned from the provider is invalid.")]
     InvalidClient,
+    /// The authenticated client is not authorized to use this authorization grant type.
+    #[error("The authenticated client is not authorized to use this authorization grant type.")]
+    ClientNotAllowedToUseGrantType {
+        /// The requested grant type
+        requested: &'static str,
+    },
     /// The client secret provided by the request is incorrect.
     #[error("The client secret is incorrect.")]
     InvalidClientSecret,
@@ -47,17 +56,24 @@ pub enum OAuthValidationError {
     #[error("Redirect uri could not be parsed, or contained a #fragment")]
     InvalidRedirectUri,
     /// No scopes were provided through either the request, nor the client provider (as a default).
-    #[error("No scopes were provided through either the request, nor the client provider (as a default)")]
+    #[error("No scopes were provided through either the request, nor the client provider (as a default)"
+    )]
     NoScopesProvided,
-    /// The requested scope was not allowed by the client.
-    #[error("The requested scope was not allowed by the client")]
-    ScopeNotAllowed,
+    /// The requested scope was not allowed by the resource owner.
+    #[error("The requested scope was not allowed by the resource owner")]
+    ScopeNotConsented,
     /// Invalid authorization code.
     #[error("Invalid authorization code")]
     InvalidAuthorizationCode,
+    /// Authorization code was not issued to this client
+    #[error("Authorization code was not issued to this client")]
+    AuthorizationCodeClientMismatch,
     /// Invalid refresh token.
     #[error("Invalid refresh token")]
     InvalidRefreshToken,
+    /// Refresh token was not issued to this client
+    #[error("Refresh token was not issued to this client")]
+    RefreshTokenClientMismatch,
     /// Invalid code verifier.
     #[error("Invalid code verifier")]
     InvalidCodeVerifier,
@@ -88,36 +104,18 @@ impl<E> From<OAuthValidationError> for OAuthError<E> {
 
 impl<E> FrontendResponseExt for OAuthError<E> {
     fn into_frontend_response(self) -> FrontendResponse {
-        match self {
-            OAuthError::RequiresResourceOwnerInteraction(response) => response,
-            OAuthError::ValidationFailed(
-                OAuthValidationError::ClientDoesNotExist
-                | OAuthValidationError::MismatchedClientCredentials
-                | OAuthValidationError::NoRedirectUri
-                | OAuthValidationError::InvalidRedirectUri
-                | OAuthValidationError::UnknownRedirectUri,
-            ) => {
-                // If the request fails due to a missing, invalid, or mismatching redirect URI,
-                // or if the client identifier is missing or invalid,
-                // the authorization server SHOULD inform the resource owner of the error and
-                // MUST NOT automatically redirect the user agent to the invalid redirect URI.
-                // TODO Allow AS implementer to customize this response
-                let error: PublicOAuthError = self.into();
-                FrontendResponse::Error { error: error.into() }
-            }
-            _ => {
-                // TODO Some errors require a redirect back to the client, whereas some others require a message to the resource owner, this needs to be implemented
-                // TODO If this is an authorization error, make this a redirect and include state+iss
-                let error: PublicOAuthError = self.into();
-                FrontendResponse::Error { error: error.into() }
-            }
+        if let OAuthError::RequiresResourceOwnerInteraction(response) = self {
+            return response;
         }
+
+        let error: PublicOAuthError = self.into();
+        FrontendResponse::Error { error: error.into() }
     }
 }
 
 /// The public OAuth error types that can be returned to the client.
 /// These are the errors that are safe to show to the client, and do not expose any internal information.
-#[derive(Error, Debug, Serialize)]
+#[derive(Error, Debug, PartialEq, Serialize)]
 pub enum PublicOAuthError {
     /// The resource owner or authorization server denied the request.
     #[error("access_denied")]
@@ -131,6 +129,9 @@ pub enum PublicOAuthError {
     /// Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method).
     #[error("invalid_client")]
     InvalidClient,
+    /// The authenticated client is not authorized to use this authorization grant type.
+    #[error("unauthorized_client")]
+    UnauthorizedClient,
     /// The authorization server encountered an unexpected condition that prevented it from fulfilling the request.
     #[error("server_error")]
     ServerError,
@@ -147,8 +148,11 @@ impl<E> From<OAuthError<E>> for PublicOAuthError {
                 | OAuthValidationError::InvalidClientSecret,
             ) => Self::InvalidClient,
             OAuthError::ValidationFailed(
-                OAuthValidationError::ScopeNotAllowed | OAuthValidationError::NoScopesProvided,
+                OAuthValidationError::ScopeNotConsented | OAuthValidationError::NoScopesProvided,
             ) => Self::InvalidScope,
+            OAuthError::ValidationFailed(
+                OAuthValidationError::ClientNotAllowedToUseGrantType { .. },
+            ) => Self::UnauthorizedClient,
             OAuthError::ValidationFailed(_) => Self::InvalidRequest,
             OAuthError::ProviderImplementationError(_) => Self::ServerError,
             OAuthError::RequiresResourceOwnerInteraction(_) => {
@@ -170,6 +174,7 @@ impl PublicOAuthError {
             Self::InvalidRequest => "The request is missing a required parameter, includes an invalid parameter value, includes a parameter more than once, or is otherwise malformed.",
             Self::InvalidScope => "The requested scope is invalid, unknown, malformed, or exceeds the scope granted by the resource owner.",
             Self::InvalidClient => "Client authentication failed (e.g., unknown client, no client authentication included, or unsupported authentication method).",
+            Self::UnauthorizedClient => "The authenticated client is not authorized to use this authorization grant type.",
             Self::ServerError => "The authorization server encountered an unexpected condition that prevented it from fulfilling the request.",
         }
     }

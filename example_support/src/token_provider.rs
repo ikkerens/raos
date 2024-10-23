@@ -4,7 +4,7 @@ use rand::{distributions::Alphanumeric, thread_rng, Rng};
 
 use raos::{
     async_trait,
-    common::Client,
+    common::model::Client,
     token::{GrantType, RefreshGrant, Token, TokenProvider},
 };
 
@@ -34,7 +34,6 @@ impl TokenProvider for DumbTokenProvider {
 
     async fn exchange_refresh_token(
         &self,
-        _client: &Client,
         _refresh_token: String,
     ) -> Result<Option<RefreshGrant<Self::OwnerId>>, Self::Error> {
         Ok(None)
