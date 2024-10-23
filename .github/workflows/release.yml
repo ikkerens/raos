@@ -10,13 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     environment: Release
     steps:
+      - name: Checkout git repository
+        uses: actions/checkout@v2
+
       # Prepare crate
       - name: Set crate version
         run: find . -name 'Cargo.toml' -exec sed -i "s/0.0.0-dev/$(git describe --tags)/g" {} +
 
       # Basic tests to ensure code quality before release
-      - name: Checkout git repository
-        uses: actions/checkout@v2
       - name: Run unit tests
         run: cargo test --all --all-features
       - name: Test code formatting
