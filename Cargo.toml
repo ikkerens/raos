@@ -2,6 +2,7 @@
 members = [
     "raos",
     "raos_actix",
+    "raos_axum",
     "example_support"
 ]
 resolver = "2"

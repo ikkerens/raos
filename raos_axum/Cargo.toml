@@ -1,0 +1,19 @@
+[package]
+name = "raos_axum"
+version = "0.0.0-dev"
+edition = "2021"
+description = "Async wrapper for raos using axum"
+repository = "https://github.com/ikkerens/raos"
+license = "MIT"
+
+[dependencies]
+raos = { path = "../raos", version = "=0.0.0-dev" }
+axum = "0.7"
+serde_urlencoded = "0.7"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+example_support = { path = "../example_support" }
+
+[[example]]
+name = "axum"
